@@ -117,7 +117,7 @@ plt.ylabel('Blood Alcohol Concentration (mg/100mL)')
 plt.title('BAC Comparison: Classical vs Fractional Models')
 plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.grid(True, alpha=0.3)
-plt.ylim(0, 0.25)  # Realistic BAC range
+plt.ylim(0, 0.15)  # Realistic BAC range
 
 
 # Plot 2: Tolerance Time Analysis
