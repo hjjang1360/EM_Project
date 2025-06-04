@@ -10,6 +10,7 @@ warnings.filterwarnings('ignore')
 plt.rcParams['font.family'] = 'DejaVu Sans'
 plt.rcParams['figure.figsize'] = (12, 8)
 
+
 # Mittag-Leffler function approximation (simplified for demonstration)
 def mittag_leffler(z, alpha, n_terms=50):
     """Approximation of single-parameter Mittag-Leffler function"""
@@ -26,6 +27,8 @@ def two_param_mittag_leffler(x, y, alpha, beta, n_terms=20):
             result += (x**m * y**n) / gamma(alpha*m + beta*n + 1)
     return result
 
+
+
 # Model parameters
 def calculate_initial_concentration(weight, tbw_ratio, volume, abv):
     """Calculate initial alcohol concentration in stomach"""
@@ -37,6 +40,8 @@ def calculate_initial_concentration(weight, tbw_ratio, volume, abv):
     # Initial concentration in g/L (which equals mg/100mL when divided by 10)
     A0 = alcohol_mass / tbw_volume
     return A0
+
+
 
 # Fractional order BAC model
 def fractional_bac_model(t, A0, k1, k2, alpha=0.8, beta=0.9):
@@ -61,6 +66,8 @@ def classical_bac_model(t, A0, k1, k2):
     else:
         B_t = k1 * A0 * t * np.exp(-k1 * t) / 10
     return A_t, B_t
+
+
 
 # Create figure with subplots
 fig = plt.figure(figsize=(16, 12))
@@ -91,6 +98,13 @@ for scenario in scenarios:
     
     plt.plot(t, B_classical, '--', color=scenario["color"], alpha=0.7, 
              label=f'{scenario["label"]} (Classical)')
+    
+    B_fractional = []
+    for time in t:
+        _, B = fractional_bac_model(time, A0, k1, k2, alpha, beta)
+        B_fractional.append(B)  # Already in mg/100mL (equivalent to %)
+    plt.plot(t, B_fractional, color=scenario["color"], linewidth=2, 
+             label=f'{scenario["label"]} (Fractional)')
 
 # Add threshold lines
 plt.axhline(y=0.08, color='red', linestyle='-', alpha=0.5, label='Legal Limit (0.08%)')
@@ -101,7 +115,8 @@ plt.ylabel('Blood Alcohol Concentration (mg/100mL)')
 plt.title('BAC Comparison: Classical vs Fractional Models')
 plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.grid(True, alpha=0.3)
-plt.ylim(0, 0.25)  # Realistic BAC range
+plt.ylim(0, 0.7)  # Realistic BAC range
+
 
 # Plot 2: Tolerance Time Analysis
 plt.subplot(2, 3, 2)
