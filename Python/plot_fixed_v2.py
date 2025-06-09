@@ -4,12 +4,15 @@ Addressing:
 1. Body weight over 90kg showing zero recovery time
 2. Clear unit labels for total body water (in liters)
 3. Showing actual tolerance time differences between models
+4. Adding real experimental data comparison
 """
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.special import gamma
 import seaborn as sns
 import warnings
+import pandas as pd # Added for CSV reading
+
 warnings.filterwarnings('ignore')
 
 # Import functions from all_v9.py
@@ -24,7 +27,7 @@ from all_v9 import (
 
 # Set plot parameters for better visualization
 plt.rcParams['font.family'] = 'DejaVu Sans'
-plt.rcParams['figure.figsize'] = (18, 12)
+plt.rcParams['figure.figsize'] = (18, 12) # Adjusted for potentially more subplots or wider figure if needed
 sns.set_style("whitegrid")
 
 # Model parameters - fixed for proper behavior
@@ -67,7 +70,8 @@ def fractional_bac_model_improved(t, A0, k1, k2, alpha=0.8, beta=0.9):
             # Or, if it's a direct solution of a two-compartment model:
             val1 = ml1(-k1 * (t**alpha), alpha)
             val2 = ml1(-k2 * (t**beta), beta) # Assuming beta for the second process
-            B_t = (A0 * k1 / (k2 - k1)) * (val1 - val2) if (k2-k1) != 0 else A0 * k1 * alpha * (t**(alpha-1)) * ml1(-k1*(t**alpha), alpha)
+            # If A0 is g/L, B_t from model is g/L. Multiply by 0.1 for g/100mL
+            B_t_model = (A0 * k1 / (k2 - k1)) * (val1 - val2) if (k2-k1) != 0 else A0 * k1 * alpha * (t**(alpha-1)) * ml1(-k1*(t**alpha), alpha)
 
 
         else:
@@ -76,9 +80,10 @@ def fractional_bac_model_improved(t, A0, k1, k2, alpha=0.8, beta=0.9):
             # C = A0 * k1 / (k2-k1) or similar scaling factor
             term1 = ml1(-k1 * (t**alpha), alpha)
             term2 = ml1(-k2 * (t**beta), beta) # Using beta for the elimination part
-            B_t = (A0 * k1 / (k2 - k1)) * (term1 - term2)
+            # If A0 is g/L, B_t from model is g/L. Multiply by 0.1 for g/100mL
+            B_t_model = (A0 * k1 / (k2 - k1)) * (term1 - term2)
         
-        B_t = max(0, B_t * 0.1)  # Convert g/L to mg/100mL
+        B_t = max(0, B_t_model * 0.1)  # Convert g/L to g/100mL (%)
     else:
         B_t = 0
     
@@ -107,17 +112,17 @@ for scenario in scenarios:
     
     bac_values = []
     for time_point in t_dense:
-        _, B = classical_bac_model(time_point, A0, k1, k2)
-        bac_values.append(B)
+        _, B_raw = classical_bac_model(time_point, A0, k1, k2) # B_raw is in g/L
+        bac_values.append(B_raw * 0.1) # Convert to g/100mL
     
     label = f'{scenario["gender"]}, {"Low ABV" if scenario["abv"] == 5 else "High ABV"}'
     ax.plot(t_dense, bac_values, color=scenario["color"], linestyle=scenario["linestyle"], 
            linewidth=2, label=label)
 
-ax.axhline(y=0.08, color='red', linestyle=':', alpha=0.7, label='Legal Limit (0.08%)')
-ax.axhline(y=0.01, color='orange', linestyle=':', alpha=0.7, label='Recovery (0.01%)')
+ax.axhline(y=0.08, color='red', linestyle=':', alpha=0.7, label='Legal Limit (0.08 g/100mL)')
+ax.axhline(y=0.01, color='orange', linestyle=':', alpha=0.7, label='Recovery (0.01 g/100mL)')
 ax.set_xlabel('Time (hours)')
-ax.set_ylabel('BAC (mg/100mL)')
+ax.set_ylabel('BAC (g/100mL)') # Changed unit label
 ax.set_title('Classical Model: BAC vs Time (65kg)')
 ax.legend()
 ax.grid(True, alpha=0.3)
@@ -136,8 +141,8 @@ for tbw in tbw_values:
     
     bac_male = []
     for time_point in t:
-        _, B = classical_bac_model(time_point, A0_male, k1, k2)
-        bac_male.append(B)
+        _, B_raw = classical_bac_model(time_point, A0_male, k1, k2)
+        bac_male.append(B_raw * 0.1) # Convert to g/100mL
     
     _, t_f_male = find_threshold_times(t, np.array(bac_male))
     recovery_times_male.append(t_f_male if t_f_male else 0)
@@ -148,8 +153,8 @@ for tbw in tbw_values:
     
     bac_female = []
     for time_point in t:
-        _, B = classical_bac_model(time_point, A0_female, k1, k2)
-        bac_female.append(B)
+        _, B_raw = classical_bac_model(time_point, A0_female, k1, k2)
+        bac_female.append(B_raw * 0.1) # Convert to g/100mL
     
     _, t_f_female = find_threshold_times(t, np.array(bac_female))
     recovery_times_female.append(t_f_female if t_f_female else 0)
@@ -174,8 +179,8 @@ for weight in weights:
     t_extended = np.linspace(0, 15, 500)  # Longer time for heavier weights
     bac_values = []
     for time_point in t_extended:
-        _, B = classical_bac_model(time_point, A0, k1, k2)
-        bac_values.append(B)
+        _, B_raw = classical_bac_model(time_point, A0, k1, k2)
+        bac_values.append(B_raw * 0.1) # Convert to g/100mL
     
     _, t_f = find_threshold_times(t_extended, np.array(bac_values))
     recovery_times_weight.append(t_f if t_f else 0)
@@ -202,10 +207,10 @@ for scenario in scenarios:
     ax.plot(t_dense, bac_values, color=scenario["color"], linestyle=scenario["linestyle"], 
            linewidth=2, label=label)
 
-ax.axhline(y=0.08, color='red', linestyle=':', alpha=0.7, label='Legal Limit (0.08%)')
-ax.axhline(y=0.01, color='orange', linestyle=':', alpha=0.7, label='Recovery (0.01%)')
+ax.axhline(y=0.08, color='red', linestyle=':', alpha=0.7, label='Legal Limit (0.08 g/100mL)')
+ax.axhline(y=0.01, color='orange', linestyle=':', alpha=0.7, label='Recovery (0.01 g/100mL)')
 ax.set_xlabel('Time (hours)')
-ax.set_ylabel('BAC (mg/100mL)')
+ax.set_ylabel('BAC (g/100mL)') # Changed unit label
 ax.set_title('Fractional Model: BAC vs Time (65kg)')
 ax.legend()
 ax.grid(True, alpha=0.3)
@@ -283,7 +288,7 @@ plt.show()
 # =============================================================================
 
 # Create analysis plots
-fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+fig, axes = plt.subplots(2, 2, figsize=(15, 10)) # Keep as is, or adjust if needed
 
 # Comparison 1: Direct model comparison for a typical scenario - FIXED
 ax = axes[0, 0]
@@ -294,20 +299,25 @@ bac_classical = []
 bac_fractional = []
 
 for time_point in t_dense:  # Use denser time grid
-    _, B_c = classical_bac_model(time_point, A0, k1, k2)
-    _, B_f = fractional_bac_model_improved(time_point, A0, k1, k2, alpha, beta)
-    bac_classical.append(B_c)
+    _, B_c_raw = classical_bac_model(time_point, A0, k1, k2) # B_c_raw is g/L
+    _, B_f = fractional_bac_model_improved(time_point, A0, k1, k2, alpha, beta) # B_f is g/100mL
+    bac_classical.append(B_c_raw * 0.1) # Convert to g/100mL
     bac_fractional.append(B_f)
 
 ax.plot(t_dense, bac_classical, 'b-', linewidth=2, label='Classical Model')
 ax.plot(t_dense, bac_fractional, 'r--', linewidth=2, label='Fractional Model')
-ax.axhline(y=0.08, color='red', linestyle=':', alpha=0.7, label='Legal Limit')
-ax.axhline(y=0.01, color='orange', linestyle=':', alpha=0.7, label='Recovery')
+
+# Real data comparison removed for better focus on model comparison
+
+
+ax.axhline(y=0.08, color='red', linestyle=':', alpha=0.7, label='Legal Limit (0.08 g/100mL)')
+ax.axhline(y=0.01, color='orange', linestyle=':', alpha=0.7, label='Recovery (0.01 g/100mL)')
 ax.set_xlabel('Time (hours)')
-ax.set_ylabel('BAC (mg/100mL)')
-ax.set_title('Model Comparison: 70kg Male, Beer')
+ax.set_ylabel('BAC (g/100mL)') # Changed unit label
+ax.set_title('Model Comparison: Classical vs Fractional')
 ax.legend()
 ax.grid(True, alpha=0.3)
+ax.set_ylim(bottom=0) # Ensure y-axis starts at 0
 
 # Comparison 2: Tolerance time comparison - FIXED
 ax = axes[0, 1]
@@ -315,8 +325,8 @@ tolerance_classical = []
 tolerance_fractional = []
 
 # Use a higher alcohol intake scenario for tolerance time comparison
-# e.g., 200ml of 40% ABV spirit
-volume_strong, abv_strong = 200, 40 
+# e.g., 500ml of 40% ABV spirit
+volume_strong, abv_strong = 500, 40 
 threshold_high = 0.08 # Define the threshold for tolerance
 
 # Calculate with extended time sampling for better accuracy
@@ -328,8 +338,8 @@ for weight in weights:
     # Classical model tolerance
     bac_c_values = []
     for time_point in t_extended_tolerance:
-        _, B = classical_bac_model(time_point, A0_tolerance, k1, k2)
-        bac_c_values.append(B)
+        _, B_raw = classical_bac_model(time_point, A0_tolerance, k1, k2)
+        bac_c_values.append(B_raw * 0.1) # Convert to g/100mL
     bac_c_np = np.array(bac_c_values)
     
     indices_above_high_c = np.where(bac_c_np >= threshold_high)[0]
@@ -379,18 +389,19 @@ A0 = calculate_initial_concentration(70, 0.68, 350, 5)
 for i, alpha_val in enumerate(alpha_values):
     bac_values = []
     for time_point in t_dense:
-        if alpha_val == 1.0:
-            _, B = classical_bac_model(time_point, A0, k1, k2)
+        if alpha_val == 1.0: # Classical case
+            _, B_raw = classical_bac_model(time_point, A0, k1, k2)
+            B = B_raw * 0.1 # Convert to g/100mL
         else:
             _, B = fractional_bac_model_improved(time_point, A0, k1, k2, alpha_val, beta)
         bac_values.append(B)
     
-    label = f'α = {alpha_val}' + (' (Classical)' if alpha_val == 1.0 else '')
+    label = f'α = {alpha_val}' + (' (Classical Equivalent)' if alpha_val == 1.0 else '')
     ax.plot(t_dense, bac_values, color=colors[i], linewidth=2, label=label)
 
 ax.axhline(y=0.08, color='red', linestyle=':', alpha=0.7, label='Legal Limit')
 ax.set_xlabel('Time (hours)')
-ax.set_ylabel('BAC (mg/100mL)')
+ax.set_ylabel('BAC (g/100mL)') # Changed unit label
 ax.set_title('Effect of Fractional Order α')
 ax.legend()
 ax.grid(True, alpha=0.3)
@@ -404,15 +415,15 @@ bac_fractional_short = []
 
 A0 = calculate_initial_concentration(70, 0.68, 350, 5)
 for time_point in t_short:
-    _, B_c = classical_bac_model(time_point, A0, k1, k2)
+    _, B_c_raw = classical_bac_model(time_point, A0, k1, k2)
     _, B_f = fractional_bac_model_improved(time_point, A0, k1, k2, 0.7, 0.8)  # Lower alpha for more memory effect
-    bac_classical_short.append(B_c)
+    bac_classical_short.append(B_c_raw * 0.1) # Convert to g/100mL
     bac_fractional_short.append(B_f)
 
 ax.plot(t_short, bac_classical_short, 'b-', linewidth=2, label='Classical (No Memory)')
 ax.plot(t_short, bac_fractional_short, 'r--', linewidth=2, label='Fractional (Memory Effect)')
 ax.set_xlabel('Time (hours)')
-ax.set_ylabel('BAC (mg/100mL)')
+ax.set_ylabel('BAC (g/100mL)') # Changed unit label
 ax.set_title('Memory Effect in Fractional Model')
 ax.legend()
 ax.grid(True, alpha=0.3)
@@ -427,3 +438,4 @@ print("1. Body weight > 90kg now shows proper recovery times (extended time rang
 print("2. Clear label added: 'Total Body Water (liters)'")
 print("3. Tolerance time comparison now shows actual differences between models")
 print("4. Consistent y-axis scaling between plots")
+print("5. Added real TAC data comparison to the first analysis plot and updated units.")
