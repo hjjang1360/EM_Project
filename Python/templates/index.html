@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍺 BAC Calculator - 웹 버전 (수정)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            display: flex;
+            min-height: 600px;
+        }
+        
+        .input-panel {
+            flex: 1;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+        
+        .results-panel {
+            flex: 2;
+            padding: 30px;
+            background: white;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ecf0f1;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .results {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .results h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .result-value {
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        
+        .graph-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .graph-container img {
+            max-width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            color: #856404;
+        }
+        
+        .warning h4 {
+            margin-bottom: 10px;
+            color: #e17055;
+        }
+        
+        .fix-notice {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #155724;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍺 혈중알코올농도(BAC) 계산기</h1>
+            <p>분수계 미분방정식을 이용한 정확한 BAC 예측 시스템 (개선 버전)</p>
+        </div>
+        
+        <div class="content">
+            <div class="input-panel">
+                <div class="fix-notice">
+                    <h4>🔧 수정 사항</h4>
+                    <ul>
+                        <li>회복 시간 예측 로직 개선</li>
+                        <li>한글 폰트 표시 문제 해결</li>
+                        <li>피크 이후 시점만 고려하여 정확한 예측</li>
+                    </ul>
+                </div>
+                
+                <h2>📝 정보 입력</h2>
+                
+                <div class="form-group">
+                    <label for="gender">성별</label>
+                    <select id="gender">
+                        <option value="male">남성</option>
+                        <option value="female">여성</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="age">나이</label>
+                    <input type="number" id="age" min="19" max="100" value="25">
+                </div>
+                
+                <div class="form-group">
+                    <label for="weight">몸무게 (kg)</label>
+                    <input type="number" id="weight" min="30" max="200" step="0.5" value="70">
+                </div>
+                
+                <div class="form-group">
+                    <label for="drink_type">술 종류</label>
+                    <select id="drink_type" onchange="updateDrinkPreset()">
+                        <option value="beer">맥주 (5%, 500mL)</option>
+                        <option value="soju" selected>소주 (17%, 360mL)</option>
+                        <option value="wine">와인 (12%, 150mL)</option>
+                        <option value="whiskey">위스키 (40%, 50mL)</option>
+                        <option value="makgeolli">막걸리 (6%, 300mL)</option>
+                        <option value="custom">직접입력</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="volume">음주량 (mL)</label>
+                    <input type="number" id="volume" min="10" max="2000" value="360">
+                </div>
+                
+                <div class="form-group">
+                    <label for="abv">알코올 도수 (%)</label>
+                    <input type="number" id="abv" min="0.5" max="60" step="0.1" value="17">
+                </div>
+                
+                <div class="form-group">
+                    <label for="drinking_time">음주 시작 시간</label>
+                    <input type="time" id="drinking_time">
+                </div>
+                
+                <div class="form-group">
+                    <label for="model_type">계산 모델</label>
+                    <select id="model_type">
+                        <option value="fractional" selected>분수계 모델 (정확, 권장)</option>
+                        <option value="classical">고전 모델 (단순, 빠름)</option>
+                    </select>
+                </div>
+                
+                <button class="btn" onclick="calculateBAC()">🧮 BAC 계산하기</button>
+            </div>
+            
+            <div class="results-panel">
+                <div id="loading" style="display: none; text-align: center; padding: 50px;">
+                    <h3>계산 중...</h3>
+                    <p>잠시만 기다려주세요.</p>
+                </div>
+                
+                <div id="results" style="display: none;">
+                    <div class="results">
+                        <h3>📊 계산 결과</h3>
+                        <div id="calculation-results"></div>
+                    </div>
+                    
+                    <div class="results">
+                        <h3>⏰ 회복 시간 예측 (개선됨)</h3>
+                        <div id="recovery-results"></div>
+                    </div>
+                    
+                    <div class="graph-container">
+                        <img id="graph" alt="BAC Graph" style="display: none;">
+                    </div>
+                </div>
+                
+                <div class="warning">
+                    <h4>⚠️ 중요한 주의사항</h4>
+                    <ul>
+                        <li>이 계산기는 참고용이며 개인차가 있을 수 있습니다</li>
+                        <li>실제 음주운전은 절대 금지입니다</li>
+                        <li>안전을 위해 음주 후에는 대중교통을 이용하세요</li>
+                        <li>의학적 문제가 있는 경우 전문의와 상담하세요</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Set current time as default
+        document.getElementById('drinking_time').value = new Date().toTimeString().slice(0,5);
+        
+        // Drink presets
+        const drinkPresets = {
+            beer: { abv: 5, volume: 500 },
+            soju: { abv: 17, volume: 360 },
+            wine: { abv: 12, volume: 150 },
+            whiskey: { abv: 40, volume: 50 },
+            makgeolli: { abv: 6, volume: 300 },
+            custom: { abv: 20, volume: 100 }
+        };
+        
+        function updateDrinkPreset() {
+            const drinkType = document.getElementById('drink_type').value;
+            const preset = drinkPresets[drinkType];
+            
+            if (preset) {
+                document.getElementById('abv').value = preset.abv;
+                document.getElementById('volume').value = preset.volume;
+            }
+        }
+        
+        async function calculateBAC() {
+            const loadingDiv = document.getElementById('loading');
+            const resultsDiv = document.getElementById('results');
+            const button = document.querySelector('.btn');
+            
+            // Show loading
+            loadingDiv.style.display = 'block';
+            resultsDiv.style.display = 'none';
+            button.disabled = true;
+            
+            // Collect input data
+            const data = {
+                gender: document.getElementById('gender').value,
+                age: document.getElementById('age').value,
+                weight: document.getElementById('weight').value,
+                volume: document.getElementById('volume').value,
+                abv: document.getElementById('abv').value,
+                model_type: document.getElementById('model_type').value,
+                drinking_time: document.getElementById('drinking_time').value
+            };
+            
+            try {
+                const response = await fetch('/calculate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayResults(result);
+                } else {
+                    alert('계산 오류: ' + result.error);
+                }
+            } catch (error) {
+                alert('서버 오류: ' + error.message);
+            } finally {
+                // Hide loading
+                loadingDiv.style.display = 'none';
+                button.disabled = false;
+            }
+        }
+        
+        function displayResults(result) {
+            const resultsDiv = document.getElementById('results');
+            const calcResults = document.getElementById('calculation-results');
+            const recoveryResults = document.getElementById('recovery-results');
+            const graphImg = document.getElementById('graph');
+            
+            // Display calculation results
+            calcResults.innerHTML = `
+                <div class="result-item">
+                    <span>초기 농도 (A0):</span>
+                    <span class="result-value">${result.calculations.A0} g/L</span>
+                </div>
+                <div class="result-item">
+                    <span>최고 BAC:</span>
+                    <span class="result-value">${result.calculations.peak_bac} mg/100mL</span>
+                </div>
+                <div class="result-item">
+                    <span>최고점 도달:</span>
+                    <span class="result-value">음주 후 ${result.calculations.peak_time}시간</span>
+                </div>
+                <div class="result-item">
+                    <span>순수 알코올:</span>
+                    <span class="result-value">${result.input_data.alcohol_mass}g</span>
+                </div>
+            `;
+            
+            // Display recovery results with improved logic indication
+            let recoveryHTML = '';
+            
+            if (result.recovery_times.legal_time) {
+                recoveryHTML += `
+                    <div class="result-item">
+                        <span>🚗 운전 가능 (50mg/100mL):</span>
+                        <span class="result-value">음주 후 ${result.recovery_times.legal_time}시간</span>
+                    </div>
+                `;
+            } else {
+                recoveryHTML += `
+                    <div class="result-item">
+                        <span>🚗 운전 가능:</span>
+                        <span class="result-value">24시간 내 불가능</span>
+                    </div>
+                `;
+            }
+            
+            if (result.recovery_times.safe_time) {
+                recoveryHTML += `
+                    <div class="result-item">
+                        <span>✅ 안전 운전 (30mg/100mL):</span>
+                        <span class="result-value">음주 후 ${result.recovery_times.safe_time}시간</span>
+                    </div>
+                `;
+            } else {
+                recoveryHTML += `
+                    <div class="result-item">
+                        <span>✅ 안전 운전:</span>
+                        <span class="result-value">24시간 내 불가능</span>
+                    </div>
+                `;
+            }
+            
+            if (result.recovery_times.recovery_time) {
+                recoveryHTML += `
+                    <div class="result-item">
+                        <span>🎉 완전 회복 (10mg/100mL):</span>
+                        <span class="result-value">음주 후 ${result.recovery_times.recovery_time}시간</span>
+                    </div>
+                `;
+            } else {
+                recoveryHTML += `
+                    <div class="result-item">
+                        <span>🎉 완전 회복:</span>
+                        <span class="result-value">24시간 내 불가능</span>
+                    </div>
+                `;
+            }
+            
+            recoveryHTML += `
+                <div class="result-item" style="margin-top: 10px; font-style: italic; color: #27ae60;">
+                    <span>📈 개선된 예측:</span>
+                    <span>피크 이후 시점만 고려</span>
+                </div>
+            `;
+            
+            recoveryResults.innerHTML = recoveryHTML;
+            
+            // Display graph
+            if (result.graph_url) {
+                graphImg.src = result.graph_url;
+                graphImg.style.display = 'block';
+            }
+            
+            // Show results
+            resultsDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

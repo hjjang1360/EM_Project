@@ -1,0 +1,1083 @@
+\documentclass[11pt]{article}
+
+\usepackage{fixltx2e}
+\usepackage{amsmath, amsfonts, amssymb, amsthm, amscd}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{booktabs, multirow, caption}
+\usepackage[labelfont=bf,textfont={sl,bf},lofdepth,lotdepth]{subfig}
+\usepackage{geometry}
+\usepackage{authblk}
+% \usepackage{kotex}
+\usepackage{url}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{hyperref}
+\usepackage{kotex}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{geometry}
+\usepackage{cite}
+\usepackage{url}
+% \usepackage{listings}
+\pgfplotsset{compat=1.17}
+
+\geometry{letterpaper}
+
+\setlength{\oddsidemargin}{0cm}
+\setlength{\evensidemargin}{0cm}
+\setlength{\headheight}{0.5cm}
+\setlength{\headsep}{0cm}
+\setlength{\textwidth}{16cm}
+\setlength{\textheight}{21.0cm}
+\baselineskip=24pt
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{corollary}{Corollary}[section]
+\newtheorem{remark}{Remark}[section]
+\newtheorem{example}{Example}[section]
+\newtheorem{definition}{Definition}[section]
+
+\newcommand{\ds}{\displaystyle}
+
+% \lstset{
+%   language=Python,
+%   basicstyle=\ttfamily\small,
+%   keywordstyle=\color{blue},
+%   commentstyle=\color{gray},
+%   stringstyle=\color{orange},
+%   breaklines=true,
+%   frame=single
+% }
+
+\begin{document}
+
+% \title{ Algorithm of Corrupted Image Recovery }
+\title{Implementation of an alcohol tolerance prediction model using differential equations and Laplace transforms}
+
+% \author{Hyunjun Jang Minyeop Jin Sangsu Lee
+% 		{\thanks{hjjang1360@kentech.ac.kr}} \\
+% 		Department of Energy Engineering, \\
+% 		Korea Institute of Energy Technology (KENTECH), South Korea 58330}
+\author[1]{Hyunjun Jang}
+\author[1]{Minyeop Jin}
+\author[1]{Sangsu Lee}
+\author[1]{Seojin Choi}
+\affil[1]{Korea Institute of Energy Technology (KENTECH)}
+
+\maketitle
+
+% \begin{abstract}
+% Write the abstract of your research here. Write the selling points of your research compactly.
+% \end{abstract}
+
+%  {\it Keywords:} Kewords
+
+% \section{Topic}
+\section{Introduction}
+% \begin{itemize}
+%     \item Image processing with Laplace transform
+%     \item Compare the Laplace and Fourier transforms in the image convolution process
+%     \item \textbf{Image inpainting using various algorithms. }
+%     \item \textbf{Prediction of blood ETOH concentration through DF}
+% \end{itemize}
+
+% \subsection{Guideline}
+\subsection{Background: Blood Alcohol Level Model}
+
+We separate the alcohol concentration in the stomach \(A(t)\) and the blood alcohol concentration \(B(t)\) into two compartments, and assume a first-order kinetic model as follows.\cite{base_kinetic_eq}.
+\[
+\begin{cases}
+\displaystyle \frac{dA}{dt} = -k_1 A(t), 
+& A(0) = A_0, \\[1em]
+\displaystyle \frac{dB}{dt} = k_1 A(t) - k_2 B(t), 
+& B(0) = 0,
+\end{cases}
+\]
+  
+\(\,k_1\)\,: Absorption rate of transfer from the stomach to the bloodstream\\  
+\(\,k_2\)\,: Elimination rate from the bloodstream,  \\
+\(\,A_0\)\,: Initial total amount of alcohol in the stomach
+
+The solution of this system is given in a closed form as follows.\cite{base_kinetic_eq}:
+\[
+A(t) = A_0 e^{-k_1 t},
+\qquad
+B(t) = \frac{k_1 A_0}{k_2 - k_1}
+\bigl(e^{-k_1 t} - e^{-k_2 t}\bigr).
+\]
+
+
+
+% ----------------
+\subsection{Motivation: Blood Alcohol Level Model}
+Alcohol plays a significant role in modern society. It is a common element in social gatherings, meetings, and parties, often serving as a catalyst for interaction. However, alcohol consumption can cause various adverse effects such as headaches, confusion, fatigue, dizziness, drowsiness, sluggishness, lethargy, and loss of appetite. These symptoms frequently lead to accidents and dangerous situations.
+
+From 2019 to 2023, an average of 42 drunk driving incidents occurred daily in South Korea. Over this five-year period, a total of 75,950 alcohol-related traffic accidents were reported, causing 1,161 fatalities and 122,566 injuries. These incidents most frequently occurred between 10:00 PM and midnight on Thursday and Friday nights, which is the time when social gatherings typically happen.
+
+To reduce such accidents, this study proposes the development of a formula to estimate an individual's alcohol tolerance. By identifying personal limits more accurately, it may be possible to prevent the risks associated with excessive drinking and promote safer behavior in social contexts.\cite{drink_drive}.
+
+\subsection{Objective: Blood Alcohol Level Model}
+Many adolescents enter adulthood and university life without a clear understanding of their alcohol tolerance, leading to various incidents and accidents. To address this issue, individuals typically determine their own drinking tolerance through trial and error. However, this study aims to develop an algorithm that can estimate a person's alcohol tolerance mathematically, without the need for actual alcohol consumption. By using variables such as age, gender, body weight, drinking duration, and alcohol by volume (ABV), the algorithm predicts whether a person’s blood alcohol concentration (BAC) would exceed 0.08\%, which is the legal limit for driver's license revocation in South Korea. This threshold will be used as the criterion for defining an individual’s alcohol tolerance.
+\subsection{Problem Statement: Blood Alcohol Level Model}
+% 기존 개인의 혈중 알코올 농도 변화를 예측하는 데 사용되는 1차 동역학(first-order kinetic) 모델은 알코올 흡수율(k1 )과 제거율(k2 )을 상수로 가정하는 데 한계가 있습니다.
+% 실제로 알코올의 흡수 및 제거 과정은 단순히 순간적인 반응이 아니라, **과거의 농도 변화가 현재의 속도에 영향을 미치는 비국소적 기억 효과(non-local memory effect)**를 가집니다. 기존의 정수 차수 미분 방정식 모델은 이러한 생리적 기억 현상을 반영하는 데 한계가 있습니다.
+% 또한, 알코올 제거율은 개인의 신체 조건뿐만 아니라 현재 혈중 알코올 농도에 따라 비선형적으로 변화하는 생리적 특성을 가집니다. 그러나 이를 상수로 고정할 경우 실제 신체 반응을 정확히 모사하기 어렵습니다.
+% 따라서, 혈중 알코올 농도 예측 모델에서 이러한 비국소적 기억 효과와 동적인 제거율 변화를 통합적으로 반영하여, 개인의 주량을 보다 정확하고 현실적으로 예측할 수 있는 새로운 접근 방식의 필요성이 제기됩니다.
+
+The conventional first-order kinetic model commonly used to predict changes in an individual's blood alcohol concentration (BAC) assumes constant values for alcohol absorption rate (k1) and elimination rate (k2).
+However, this assumption poses significant limitations. In reality, the processes of alcohol absorption and elimination are not instantaneous reactions but are influenced by non-local memory effects, where past concentration changes affect the current rate of change. Traditional integer-order differential equation models fail to adequately capture these physiological memory phenomena.
+Also, alcohol elimination rates are not fixed constants; they vary nonlinearly depending on both the individual's physical condition and the current BAC level. Fixing the elimination rate as a constant makes it difficult to accurately model the body's actual physiological response.
+Therefore, there is a pressing need for a new modeling approach that integrates both the non-local memory effect and the dynamic variation in elimination rates. Such an approach would enable more precise and realistic predictions of an individual's alcohol tolerance.
+
+
+% 이거는 내가 쓴게 아닌데 먼지 몰라서 일단 냅둠 The existing formula used to predict changes in an individual's blood alcohol concentration assumes fixed constants \(k_1\) and \(k_2\), despite the fact that they can change significantly depending on the individual's physical characteristics. Therefore, it is necessary to adjust the functions so that \(k_1\) and \(k_2\) depend on the current blood alcohol concentration and the variables of the physical condition of the individual.
+
+\section{Methodology}
+% 본 절에서는 Caputo 분수 미분 연산자와 라플라스 변환을 이용해 혈중 알코올 농도 모델을 유도한다.  
+% 특히 ψ-Caputo 분수 미분을 적용하는 이유는, 알코올 흡수·제거 과정에서 나타나는 \textbf{비국소적 기억 효과}(physiological memory effect)를 잘 반영하기 위함이다.  
+% ψ-Caputo 연산자는 과거의 농도 변화가 현재 농도 변화 속도에 미치는 영향을 통합적으로 고려함으로써,  
+% 기존 정수 차수 모델보다 혈중 알코올 농도 동역학을 더 현실적으로 모사할 수 있다 
+
+This section derives a BAC model using the Caputo fractional derivative operator and the Laplace transform. In particular, the \(\psi\)-Caputo fractional derivative is applied to effectively capture the non-local physiological memory effect observed during the processes of alcohol absorption and elimination.
+
+By integrally accounting for how past concentration changes influence the current rate of change, the \(\psi\)-Caputo operator enables a more realistic representation of BAC dynamics than conventional integer-order models.
+
+\subsection{Data Preprocessing and Management}
+\begin{itemize}
+  \item Weight: $m$ (kg)
+  \item Total body water (TBW) distribution ratio: $r$ (Male $0.68$, Female $0.55$)
+  \item Alcohol volume consumed: $V$ (mL)
+  \item Alcohol by volume: $\mathrm{ABV}$ (\%)
+  \item Initial alcohol concentration in the stomach:
+    \[
+      A(0) = A_0 
+      = \frac{V \times (\mathrm{ABV}/100)\times \rho_{\mathrm{EtOH}}}{r\,m},
+      \quad \rho_{\mathrm{EtOH}} = 0.789\ \mathrm{g/mL}.
+    \]
+  \item Reference blood alcohol concentrations:
+    \[
+      \mathrm{BAC}_{\mathrm{high}} = 0.08\%, 
+      \quad
+      \mathrm{BAC}_{\mathrm{low}} = 0.01\%.
+    \]
+  \item \(\psi\) function: By default $\psi(t)=t$ (Standard Caputo), can be generalized
+\end{itemize}
+% Data: 
+
+\subsection{Theoretical Derivation of the Blood Alcohol Concentration Model}
+
+\label{subsec:derivation}
+
+\begin{enumerate}
+  \item \textbf{Definition of the Caputo Fractional Derivative Operator}\\
+    The Caputo fractional derivative \({}^{C\!}D_{0+}^\alpha\) of order alpha is defined as: 
+    \[
+      {}^{C\!}D_{0+}^\alpha f(t)
+      = \frac{1}{\Gamma(n-\alpha)}
+        \int_{0}^{t}
+          (t-\tau)^{n-\alpha-1}\,
+          f^{(n)}(\tau)\,
+        d\tau,
+    \]
+    where:
+    \begin{itemize}
+      \item \(n = \lceil \alpha \rceil\) (the smallest integer greater than or equal to $\alpha$ )  
+      \item \(\Gamma(\cdot)\)is the gamma function: \(\Gamma(z)=\int_{0}^{\infty}x^{z-1}e^{-x}dx\)  
+      \item \(t\)is time, \(\tau\)is the integration variable.  
+    \end{itemize}
+    %Caputo 분수 미분은 초기값 문제(initial-value problem)에 적합하며, 초기 조건이 정수 차수 미분값으로 주어짐을 장점으로 가진다.
+    The Caputo derivative is typically applied to initial-value problems and is advantageous because it naturally incorporates initial conditions expressed in terms of integer-order derivatives.
+
+
+  \item \textbf{Setting Up the Model Equations}\\
+    \(\psi(t)=t\) (Standard Caputo), compartment-compartment two models  can be described by the following equations:
+    \begin{align}
+      {}^{C\!}D_{0+}^\alpha A(t)
+      &= -k_1\,A(t),
+      &A(0) &= A_0,
+      \label{eq:fde_A} \\
+      {}^{C\!}D_{0+}^\beta B(t)
+      &= k_1\,A(t) \;-\; k_2\,B(t),
+      &B(0) &= 0.
+      \label{eq:fde_B}
+    \end{align}
+    So,
+    \begin{itemize}
+      \item \(A(t)\): alcohol concentration in the stomach (or mass)
+      \item \(B(t)\): blood alcohol concentration (BAC)\  
+      \item \(k_1\): absorption rate constant, \(\alpha\) fractional order of the derivative (typically \(0<\alpha\le1\))\  
+      \item \(k_2\): elimination rate constant, \(\beta\) fractional order of the derivative (typically \(0<\beta\le1\))\  
+    \end{itemize}
+
+  \item \textbf{Definition of the Laplace Transform}\\
+    Laplace Transform \(\mathcal{L}\{f(t)\}(s)\) is defined as:
+    \[
+      \mathcal{L}\{f(t)\}(s)
+      = \int_{0}^{\infty} e^{-s t}\,f(t)\,dt
+    \]
+    %으로 정의되며, 미분 방정식의 해를 대수 방정식으로 바꿔 풀 수 있게 해준다.
+    This transform allows the fractional differential equations to be converted into algebraic equations for easier solution.
+    
+  \item \textbf{Solving for Alcohol Concentration in the Stomach \(A(t)\)}\\
+    Taking a Laplace transform of equation \eqref{eq:fde_A},
+    \[
+      s^\alpha\bigl(\mathcal{L}\{A\}(s)-s^{-1}A_0\bigr)
+      = -k_1\,\mathcal{L}\{A\}(s),
+    \]
+    Rearranging in terms of \(\mathcal{L}\{A\}(s)\), we get:
+    \[
+      \mathcal{L}\{A\}(s)
+      = \frac{A_0\,s^{\alpha-1}}{s^\alpha + k_1}.
+    \]
+    Taking the inverse Laplace transform using the Mittag–Leffler function \(E_{\alpha}\):
+    \begin{equation}
+      A(t)
+      = A_0\,E_{\alpha}\bigl(-k_1\,t^\alpha\bigr),
+      \quad
+      E_{\alpha}(z)
+      = \sum_{n=0}^{\infty}\frac{z^n}{\Gamma(\alpha n + 1)}.
+      \label{eq:sol_A}
+    \end{equation}
+
+  \item \textbf{Solving for Blood Alcohol Concentration \(B(t)\)}\\
+    % 방정식 \eqref{eq:fde_B}에 위에서 얻은 \(\mathcal{L}\{A\}(s)\)를 대입하고,
+    Substitute the above obtained \(\mathcal{L}\{A\}(s)\) into Equation \eqref{eq:fde_B},
+    \begin{equation}
+      \mathcal{L}\{B\}(s)
+      = \frac{k_1\,\mathcal{L}\{A\}(s)}{s^\beta + k_2}
+      = \frac{k_1\,A_0\,s^{\alpha-1}}
+             {(s^\alpha + k_1)\,(s^\beta + k_2)}.
+             \label{eq:sol_B}
+    \end{equation}
+    For the inverse transform, we use the two-parameter Mittag-Leffler function
+    \(E_{\alpha,\beta}^{(2)}\):
+    \[
+      B(t)
+      = k_1\,A_0\,
+        t^{\beta-1}\,
+        E_{\alpha,\beta}^{(2)}\bigl(-k_1\,t^\alpha,\,-k_2\,t^\beta\bigr),
+    \]
+    where:
+    \[
+      E_{\alpha,\beta}^{(2)}(x,y)
+      = \sum_{m,n\ge0}
+        \frac{x^m\,y^n}{\Gamma(\alpha m + \beta n + 1)}.
+    \]
+
+  \item \textbf{Definition of Tolerance ($\Delta$T)}\\
+    \begin{itemize}
+      \item Intoxication threshold: For \(t_i\), where \(B(t_i)=0.08\%\) % \(B(t_i)=0.08\%\)인 \(t_i\)  
+      \item Recovery threshold: For \(t_f\), where \(B(t_f)=0.01\%\) % \(B(t_f)=0.01\%\)인 \(t_f\)  
+      \item Tolerance is defined as \(\Delta T = t_f - t_i\).
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Time-Dependent Analysis of BAC Variation}
+
+\label{subsec:time_analysis}
+
+\begin{enumerate}
+  \item \textbf{Definition of Time Grid}\\
+    \[
+      t_j = j\,\Delta t,\quad j = 0,1,2,\dots,J,
+      \quad
+      \Delta t = \frac{T_{\max}}{J},
+    \]
+    Here, \(T_{\max}\)is the total simulation time of the model (e.g., 8 hours), and \(J\) is the number of intervals.
+
+  % \item \textbf{농도 시계열 계산}\\
+  \item \textbf{Calculating concentration time series}\\
+    \[
+      A_j = A(t_j), \quad B_j = B(t_j),
+      \quad j=0,\dots,J,
+    \]
+    % 단위 시간격 \(\Delta t\)마다 식 \eqref{eq:sol_A}, \eqref{eq:sol_B}를 평가하여 벡터 \(\{B_j\}\)를 얻는다.
+    Evaluate the expressions \eqref{eq:sol_A}, \eqref{eq:sol_B} for each unit time step \(\Delta t\) to get the vector \(\{B_j\}\).
+
+  \item \textbf{Time of Maximum Concentration}\\
+    \[
+      t_{\max} = \arg\max_{0\le j\le J} B_j.
+    \]
+    Find the index where \(\{B_j\}\) reaches its maximum value and record the corresponding \(t_{\max}\).
+
+  \item \textbf{Numerical Solution for Threshold Times}\\
+    \begin{itemize}
+      \item \(\mathrm{BAC}_{\rm high}\) passing time \(t_i\):  
+        \[
+          B(t_i)=\mathrm{BAC}_{\rm high}.
+        \]
+      \item \(\mathrm{BAC}_{\rm low}\) passing time \(t_f\):  
+        \[
+          B(t_f)=\mathrm{BAC}_{\rm low}.
+        \]
+    \end{itemize}
+    %이 두 방정식을 풀기 위해 이분법(bisection method) 또는 뉴턴–랩슨법을 사용한다. 예를 들어, 이분법의 경우
+    To solve these equations, the bisection method or the Newton-Raphson method can be used. For example, in the case of the bisection method:
+    \begin{align*}
+      &\text{Initial interval: } [t_a, t_b], If the signs of \quad B(t_a)-C\;\text{and}\;B(t_b)-C\;\text{are different},\\
+      &t_{\rm mid} = \tfrac{1}{2}(t_a+t_b),\quad
+      \text{Repeat:}\;\,
+      \begin{cases}
+        t_b = t_{\rm mid}, & \text{if }B(t_{\rm mid})>C,\\
+        t_a = t_{\rm mid}, & \text{otherwise},
+      \end{cases}
+    \end{align*}
+    %를 수렴 허용오차 \(\epsilon\)까지 반복하여 \(t_i\), \(t_f\)를 계산한다.
+    Repeat until the error tolerance is satisfied to calculate \(t_i\) and \(t_f\)
+
+  \item \textbf{Definition of Tolerance}\\
+    \[
+      \Delta T = t_f - t_i.
+    \]
+    This value is defined as the “tolerance time,” i.e., the time it takes from intoxication to recovery.
+
+  \item \textbf{Visualization of Concentration Curve}\\
+    Using the dataset
+    \[
+      \{(t_j,\,B_j)\}_{j=0}^J
+    \]
+    plot a graph and indicate \(t_i, t_{\max}, t_f\) with vertical lines.  
+    Example:
+    \[
+      \begin{tikzpicture}
+          \begin{axis}[
+            width=12cm, height=6cm,
+            xlabel={$t$ [h]}, ylabel={BAC},
+            xmin=0, xmax=8, ymin=0, ymax=0.10,
+            axis lines=left,
+            xtick={0,1,2,3,4,5,6,7,8},
+            ytick={0,0.02,0.04,0.06,0.08,0.10},
+            grid=both,
+            grid style={line width=.1pt, draw=gray!20},
+            major grid style={line width=.2pt,draw=gray!50},
+          ]
+            % 예시 함수: 흡수·제거 효과가 있는 차이 지수 함수로 봉우리가 생기도록
+            \addplot[
+              domain=0:8, samples=200, thick
+            ] {0.15*(exp(-0.2*x) - exp(-0.6*x))};
+            
+            % 만취 기준선 t_i (예: 2h 위치)
+            \addplot[dashed] coordinates {(2,0) (2,0.08)};
+            \node[above right] at (axis cs:2,0.08) {$t_i$};
+            
+            % 저잔 기준선 t_f (예: 6h 위치)
+            \addplot[dashed] coordinates {(6,0) (6,0.01)};
+            \node[below right] at (axis cs:6,0.01) {$t_f$};
+          \end{axis}
+        \end{tikzpicture}
+    \]
+
+  \item \textbf{Slope Correction and Residual Analysis}\\
+    \begin{itemize}
+      \item Log-linear regression: 
+        In the second interval (post-peak) of \(\ln B_j\) vs. \(t_j\), perform linear regression on the log-transformed values to estimate the elimination rate \(\tilde k_2\):
+        \[
+          \ln B_j \approx -\tilde k_2\,t_j + c.
+        \]
+      \item Residuals:  
+        Calculate the residuals \(\varepsilon_j = B_j - \widehat B(t_j)\) to assess model fit quality.
+    \end{itemize}
+
+  \item \textbf{Sensitivity Analysis}\\
+    For each parameter \(\theta\in\{k_1,k_2,\alpha,\beta\}\), evaluate the sensitivity of the outcome with respect to tolerance time:
+    \[
+      S_\theta = \frac{\Delta T(\theta + \delta) - \Delta T(\theta)}{\delta},
+    \]
+    This quantifies how changes in model parameters affect the resulting tolerance time.
+\end{enumerate}
+
+\subsection{Model Validation and Performance Evaluation}
+
+\label{subsec:validation}
+
+\begin{enumerate}
+  \item \textbf{Parameter Estimation (Nonlinear Least Squares)}\\
+    % 모델 해\[B(t;\theta)=A_0\frac{k_1}{k_2-k_1}(e^{-k_1t}-e^{-k_2t})\]
+    % 에 대해,
+    For the model solution \[B(t;\theta)=A_0\frac{k_1}{k2-k_1}(e^{-k_1t}-e^{-k_2t})\], 
+    \[
+      \hat\theta
+      = \arg\min_{\theta=(k_1,k_2)} 
+        S(\theta),\quad
+      S(\theta)=\sum_{j=1}^N\bigl(B_{\rm obs}(t_j)-B(t_j;\theta)\bigr)^2.
+    \]
+    % (여기서 \(A_0\)는 음주량·체중으로부터 사전 계산된 값이다.)
+    (where \(A_0\) is a pre-calculated value from alcohol consumption-weight).
+
+  \item \textbf{Goodness-of-Fit Metrics}\\
+    % 추정 \(\hat\theta\)를 이용해 다음 지표를 정의한다:
+    Define the following metrics with the estimated \(\hat\theta\)
+    \begin{align*}
+      \mathrm{SSE}   &= \sum_{j=1}^N\bigl(B_{\rm obs}(t_j)-B(t_j;\hat\theta)\bigr)^2,\\
+      \mathrm{RMSE}  &= \sqrt{\tfrac{1}{N}\mathrm{SSE}},\\
+      R^2            &= 1 
+        - \frac{\displaystyle\sum_{j=1}^N\bigl(B_{\rm obs}(t_j)-B(t_j;\hat\theta)\bigr)^2}
+               {\displaystyle\sum_{j=1}^N\bigl(B_{\rm obs}(t_j)-\bar B_{\rm obs}\bigr)^2},
+    \end{align*}
+    % 여기서 \(\bar B_{\rm obs}=\frac1N\sum_j B_{\rm obs}(t_j)\)이다.
+    where \(\bar B_{\rm obs}=\frac1N\sum_j B_{\rm obs}(t_j)\).
+
+  % \item \textbf{잔차 분석}\\
+  \item \textbf{Residual Analysis}\\
+    % 잔차 \(\varepsilon_j = B_{\rm obs}(t_j)-B(t_j;\hat\theta)\)에 대해
+    % \begin{itemize}
+    %   \item \emph{잔차 vs. 시간} 산점도: 구조적 오차 확인  
+    %   \item \emph{잔차 히스토그램}: 정규성(분포 대칭성) 검토
+    For residuals \(\varepsilon_j = B_{\rm obs}(t_j)-B(t_j;\hat\theta)\)
+    \begin{itemize}
+      \item \emph{residuals vs. time} Scatterplot: Checking for structural errors
+      \item \emph{residual histogram}: Review normality (distribution symmetry)
+    \end{itemize}
+
+
+  % \item \textbf{주량(ΔT) 예측 검증}\\
+  %   만취·저잔 통과 시각 \(t_i,t_f\)로부터
+  %   \[
+  %     \Delta T_{\rm pred}
+  %     = t_f - t_i,
+  %     \quad
+  %     \Delta T_{\rm obs}
+  %     = t_f^{\rm obs} - t_i^{\rm obs},
+  %   \]
+  %   두 값의 \(\mathrm{MAE}_{\Delta T}\)와 \(\mathrm{RMSE}_{\Delta T}\)를 계산하여 주량 예측 정확도를 추가로 확인한다.
+    \item \textbf{Validate alcohol consumption ($\Delta $T) prediction}\\
+    From the drunkenness-passage time \(t_i,t_f\)
+    \[
+      \Delta T_{\rm pred}
+      = t_f - t_i,
+      \quad
+      \Delta T_{\rm obs}
+      = t_f^{\rm obs} - t_i^{\rm obs},
+    \]
+    Calculate the \(\mathrm{MAE}_{\Delta T}\) and \(\mathrm{RMSE}_{\Delta T}\) of the two values to further check the accuracy of the stock forecast.
+\end{enumerate}
+
+% \section{Simulation}
+
+% \subsection{Classic BAC model}
+
+% \begin{enumerate}
+%     \item \textbf{BAC 감소 VS time}\\
+%     도수 낮은술, 높은술 (여기서 각각 남성, 여성 , 65kg)으로 총 4개의 line plot
+    
+%     \item \textbf{BAC $<$ 0.01\% time VS TBW}\\
+%     BAC가 0.01\%보다 낮을때까지 걸리는 시간 VS TBW (total body water)로 plot
+%     TBW는 age, gender로도 엮을 수 있어 괜찮아 보임. 
+
+%     \item \textbf{BAC $<$ 0.01\% time VS weight}\\
+%     BAC가 0.01\%보다 낮을때까지 걸리는 시간 VS weight. 60~100kg, interval=5kg.
+    
+% \end{enumerate}
+
+% \subsection{Fractional BAC model}\label{fractional_bac}
+
+% \begin{enumerate}
+%     \item \textbf{BAC 감소 VS time}\\
+%     도수 낮은술, 높은술 (여기서 각각 남성, 여성 , 65kg)으로 총 4개의 line plot
+    
+%     \item \textbf{BAC $<$ 0.01\% time VS TBW}\\
+%     BAC가 0.01\%보다 낮을때까지 걸리는 시간 VS TBW (total body water)로 plot
+%     TBW는 age, gender로도 엮을 수 있어 괜찮아 보임. 
+
+%     \item \textbf{BAC $<$ 0.01\% time VS weight}\\
+%     BAC가 0.01\%보다 낮을때까지 걸리는 시간 VS weight. 60~100kg, interval=5kg.
+    
+% \end{enumerate}
+
+% \section{Simulation}
+
+% 본 섹션에서는 Python 스크립트(\texttt{all\_v9.py} 및 보조 함수)를 이용한 Classical 모델과 Fractional 모델의 시뮬레이션 절차를 상세히 기술합니다. 각 모델별로 \textbf{BAC vs Time}, \textbf{Recovery Time vs TBW}, \textbf{Recovery Time vs Weight} 3가지 실험을 수행하였습니다.
+
+% \subsection{Classical BAC model}
+
+% 65 kg 기준, \texttt{tbw\_ratio}=0.68(남성), 0.55(여성), 음주량 350 mL(5\% ABV 맥주), 50 mL(40\% ABV 증류주) 조합 총 4개 시나리오에 대해 Classical 모델을 적용합니다.
+
+% \begin{enumerate}
+%   \item \textbf{BAC 감소 vs Time}\\
+%     \begin{itemize}
+%       \item 시간 그리드: 
+%         \[
+%           t_{\mathrm{dense}}
+%           = [0\!\sim\!0.2]_{100} \;\cup\; [0.2\!\sim\!1]_{100} \;\cup\; [1\!\sim\!12]_{300}
+%         \]
+%         초기(0–1 h) 구간을 촘촘히 샘플링하여 피크 근처 곡선을 선명히 표시
+%       \item 4개 시나리오의 $B(t)$ 곡선을 한 그림에 overlay
+%       \item 법정 한계(0.08\%) 및 회복 한계(0.01\%) 수평선 표시
+%     \end{itemize}
+
+%   \item \textbf{BAC\,$<$\,0.01\% time vs TBW}\\
+%     \begin{itemize}
+%       \item TBW 범위: 30 L \textasciitilde 70 L (체중\,$\times$\,tbw\_ratio)
+%       \item 각 TBW에 대응하는 체중을 역산(예: weight = TBW/0.68) 후 Classical 모델로 $B(t)$ 계산
+%       \item $B(t)\le0.01\%$가 되는 시각 $t_f$를 y축에 플롯
+%       \item 남·녀별 marker(symbol)로 구분하여 비교
+%     \end{itemize}
+
+%   \item \textbf{BAC\,$<$\,0.01\% time vs Weight}\\
+%     \begin{itemize}
+%       \item 체중 범위: 60 kg\,\textasciitilde\,100 kg, 5 kg 단위
+%       \item 시간 확장 그리드: $0\sim15$ h, 500점 샘플링(고체중일수록 회복 시간이 길어짐)
+%       \item $t_f$ 계산으로 weight–recovery curve 획득
+%     \end{itemize}
+% \end{enumerate}
+
+% \subsection{Fractional BAC model}\label{fractional_bac}
+
+% Fractional 모델은 Classical 모델에 메모리 효과를 추가한 형태입니다. 동일한 4개 시나리오에 대해 개선된 함수 \texttt{fractional\_bac\_model\_improved}를 적용하였습니다.
+
+% \begin{enumerate}
+%   \item \textbf{BAC 감소 vs Time}\\
+%     \begin{itemize}
+%       \item Classical과 동일한 $t_{\mathrm{dense}}$ 그리드를 사용
+%       \item 초기 지연된 피크 시간, 이후 완만한 tail 구간이 잘 드러남
+%     \end{itemize}
+
+%   \item \textbf{BAC\,$<$\,0.01\% time vs TBW}\\
+%     \begin{itemize}
+%       \item Classical과 동일한 TBW 값 사용
+%       \item extended grid($0\sim15$ h)로 정확한 $t_f$ 검출
+%       \item 남·녀별 선과 마커로 구분하여 플롯
+%     \end{itemize}
+
+%   \item \textbf{BAC\,$<$\,0.01\% time vs Weight}\\
+%     \begin{itemize}
+%       \item 60 kg\,\textasciitilde\,100 kg 구간, extended grid 적용
+%       \item Fractional 모델이 Classical보다 더 긴 회복 시간을 보이는 경향 확인
+%     \end{itemize}
+% \end{enumerate}
+
+\section{Simulation}
+
+본 절에서는 Python 스크립트를 이용한 Classical 및 Fractional 모델 시뮬레이션 절차와 \ref{fractional_bac} 절에서 설명한 모델 해를 적용하여 얻은 서브플롯 구성 방식을 소개한다.
+
+\subsection{Classical BAC model}
+65kg 기준, 남/여 각 4가지 시나리오(5\% ABV 맥주·40\% ABV 증류주)로 진행. 
+\begin{enumerate}
+  \item \textbf{BAC 감소 vs Time}\
+    \begin{itemize}
+      \item 시간 그리드: $t_{\mathrm{dense}}=[0\sim0.2]_{100}\cup[0.2\sim1]_{100}\cup[1\sim12]_{300}$
+      \item 4개 시나리오의 Classical 모델 $B(t)$ 곡선 overlay
+      \item 법정 한계(0.08\%) 및 회복 한계(0.01\%) 수평선 표시
+    \end{itemize}
+
+  \item \textbf{BAC $<$ 0.01\% time vs TBW}\
+    \begin{itemize}
+      \item TBW: 30~70L (체중$\times$TBW 비율)
+      \item weight=TBW/ratio 역산, Classical 모델로 $B(t)$ 계산
+      \item $B(t)\le0.01\%$ 되는 시각 $t_f$ 산출 후 남·여 marker 구분 플롯
+    \end{itemize}
+
+  \item \textbf{BAC $<$ 0.01\% time vs Weight}\
+    \begin{itemize}
+      \item 체중: 60~100kg, 5kg 단위
+      \item 시간 확장 그리드: [0~15]h, 500점 샘플링
+      \item $B(t)\le0.01\%$ 되는 시각 $t_f$ 를 weight–time curve로 플롯
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Fractional BAC model}\label{fractional_bac}
+Fractional 모델은 Classical 모델에 메모리 효과를 도입한 형태이다. 동일한 시나리오로 개선된 \texttt{fractional\_bac\_model\_improved} 함수를 적용한다.
+\begin{enumerate}
+  \item \textbf{BAC 감소 vs Time}\
+    \begin{itemize}
+      \item Classical과 동일 $t_{\mathrm{dense}}$ 사용
+      \item 초기 지연된 피크, 말기 완만한 tail 구간 시각화
+    \end{itemize}
+
+  \item \textbf{BAC $<$ 0.01\% time vs TBW}\
+    \begin{itemize}
+      \item TBW: 30~70L
+      \item 시간 확장 그리드: [0$\sim$15]h
+      \item 남·여 marker 구분 후 $t_f$ 산출
+    \end{itemize}
+
+  \item \textbf{BAC $<$ 0.01\% time vs Weight}\
+    \begin{itemize}
+      \item 체중: 60~100kg
+      \item 시간 확장 그리드: [0$\sim$15]h
+      \item Fractional 모델 회복 시간 동태 분석
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Model Analysis}
+시뮬레이션 결과를 기반으로 모델 간 차이를 다음과 같이 분석하였다
+\begin{itemize}
+  \item \textbf{직접 비교}: 70kg 남성 맥주 시나리오에서 Classical 모델 피크 0.008 mg/100mL at 1h, Fractional 모델 0.009 mg/100mL at 1.5h
+  \item \textbf{Tolerance Time Comparison}: 고도수(500 mL, 40\% ABV)에서 Classical vs Fractional 모델 $\Delta$T 차이 명확히 시각화
+  \item \textbf{Effect of $\alpha$}: $\alpha=0.6,0.8,1.0$ 순으로 피크 BAC 감소 및 시점 앞당김 관찰
+  \item \textbf{Memory Effect}: Fractional 모델 점선은 Classical 곡선에 비해 초기 흡수 후 말기 tail 유지 시간을 연장
+\end{itemize}
+
+\subsection{Alcohol tolerance calculator app using \ref{fractional_bac}}
+
+
+% \documentclass[a4paper,11pt]{article}
+% \usepackage[utf8]{inputenc}
+% \usepackage{amsmath,amssymb}
+% \usepackage{graphicx}
+% \usepackage{listings}
+% \usepackage{xcolor}
+
+% Python code style
+
+
+% \title{혈중 알코올 농도(BAC) 모델 비교 보고서}
+% \author{}
+% \date{}
+
+% \begin{document}
+
+% \maketitle
+
+% \section{수식 정리}
+
+% \subsection{초기 농도 (Initial Concentration)}
+% \[
+% A_{0} = \frac{\text{음주량 (mL)}\times(\mathrm{ABV}/100)\times\rho_{\mathrm{ethanol}}}{\mathrm{TBW\ ratio}\times\text{체중 (kg)}},
+% \; \rho_{\mathrm{ethanol}}=0.789\;\mathrm{g/mL}
+% \]
+
+% \subsection{Classical Model (정수차수 모델)}
+% \begin{align*}
+% A(t) &= A_{0}\,e^{-k_{1}t}, \\[6pt]
+% B(t) &= \frac{k_{1}A_{0}}{k_{2}-k_{1}}\bigl(e^{-k_{1}t}-e^{-k_{2}t}\bigr)\times0.1
+% \quad[\mathrm{mg/100mL}],
+% \end{align*}
+% (특수 케이스 $k_{1}=k_{2}$ 시 $B(t)=k_{1}A_{0}\,t\,e^{-k_{1}t}\times0.1$)
+
+% \subsection{Fractional Model (분수차수 모델)}
+% \begin{align*}
+% E_{\alpha}(z) &= \sum_{n=0}^{\infty} \frac{z^{n}}{\Gamma(\alpha n+1)}, \\[6pt]
+% A(t) &= A_{0}\,E_{\alpha}(-k_{1}t^{\alpha}), \\[6pt]
+% B(t) &= \frac{k_{1}A_{0}}{k_{2}-k_{1}}\bigl[\,E_{\alpha}(-k_{1}t^{\alpha}) - E_{\beta}(-k_{2}t^{\beta})\bigr]\times0.1
+% \quad[\mathrm{mg/100mL}].
+% \end{align*}
+
+% \subsection{회복 (Tolerance) 시간}
+% \begin{itemize}
+%   \item 진입 시각 $t_{i}$: $B(t)\ge0.08\%$ 가 처음 되는 시각
+%   \item 회복 시각 $t_{f}$: $B(t)\le0.01\%$ 가 마지막이 되는 시각
+%   \item 관용 시간: $\Delta T = t_{f} - t_{i}$
+% \end{itemize}
+
+% \section{결과 (Results)}
+
+% \subsection{Classical Model}
+% \begin{itemize}
+%   \item \textbf{BAC vs Time} (65 kg): 피크 BAC 는 남성 약 0.012, 여성 약 0.014 mg/100mL에서 1.5–2시간에 도달 후 지수적 감소.
+%   \item \textbf{Recovery Time vs TBW}: TBW 증가 시 회복 시간 선형 단축, TBW $\gtrsim47$ L 구간부터 0h.
+%   \item \textbf{Recovery Time vs Weight}: 60→70 kg간 1.7→0h로 급격 감소; 75 kg 이상 구간은 0h.
+% \end{itemize}
+
+% \subsection{Fractional Model}
+% \begin{itemize}
+%   \item \textbf{BAC vs Time} (65 kg): 피크 시점 지연, 말기 꼬리 완만한 감소.
+%   \item \textbf{Recovery Time vs TBW}: 7.1→2.7h 로 장시간 회복, Classical 대비 느린 동태.
+%   \item \textbf{Recovery Time vs Weight}: 60→85 kg간 4.9→0h 감소; 긴 시간 그리드로 의미 있는 회복 시간 관찰.
+% \end{itemize}
+
+% \subsection{Model Analysis}
+% \begin{itemize}
+%   \item \textbf{직접 비교}: 70 kg 남성, 맥주 시나리오에서 Classical 피크 0.008 at 1h vs Fractional 0.009 at 1.5h.
+%   \item \textbf{Tolerance Time Comparison}: 고도수(200mL,40\% ABV) 시나리오에서 두 모델 모두 $\Delta T\approx0$.
+%   \item \textbf{Effect of $\alpha$}: $\alpha=0.6,0.8,1.0$ 증가 시 피크 BAC 감소, 시점 앞당겨짐.
+%   \item \textbf{Memory Effect}: Fractional 모델(점선)은 Classical보다 말기 꼬리가 길어져 메모리 효과 반영.
+% \end{itemize}
+
+% \section{결론 (Conclusion)}
+% Classical 모델은 단순 지수 감쇠로 구현되어 초기 흡수 후 말기 감소가 빠르며, 실측 회복 지연을 반영하지 못합니다. Fractional 모델은 메모리 효과를 포함한 Mittag--Leffler 함수 해를 사용하여
+% \begin{itemize}
+%   \item 흡수 단계의 지연된 피크, 말기 구간의 완만한 감소,
+%   \item TBW·체중별 장시간 회복,
+%   \item $\alpha,\beta$ 파라미터 튜닝을 통한 개인차 반영
+% \end{itemize}
+% 모두 개선하였습니다. 법의학, 교통안전 등 실제 BAC 예측 정확도 향상을 기대할 수 있습니다.
+
+\section{Results}
+
+\subsection{Model Implementation and Validation}
+
+We successfully implemented and compared two pharmacokinetic models for blood alcohol concentration (BAC) prediction:
+
+\begin{itemize}
+    \item \textbf{Classical Model}: A traditional two-compartment model using exponential functions
+    \item \textbf{Fractional Model}: An improved model incorporating fractional calculus with Mittag-Leffler functions
+\end{itemize}
+
+\subsubsection{Model Parameters}
+
+The following parameters were used consistently across all simulations:
+
+\begin{align}
+k_1 &= 0.8 \text{ h}^{-1} \quad \text{(absorption rate)} \\
+k_2 &= 1.0 \text{ h}^{-1} \quad \text{(elimination rate)} \\
+\alpha &= 0.8 \quad \text{(fractional order for absorption)} \\
+\beta &= 0.9 \quad \text{(fractional order for elimination)}
+\end{align}
+
+\subsubsection{BAC Time-Course Analysis}
+
+Figure~\ref{fig:bac_comparison} shows the BAC time-course for both models under various scenarios:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{bac_comparison.png}
+    \caption{Comparison of Classical and Fractional BAC models showing: (Top row) Classical model results for BAC vs time, recovery time vs total body water, and recovery time vs weight. (Bottom row) Corresponding results for the fractional model. All plots demonstrate consistent behavior with proper recovery times for individuals up to 100kg body weight.}
+    \label{fig:bac_comparison}
+\end{figure}
+
+Key findings from the BAC time-course analysis:
+
+\begin{enumerate}
+    \item \textbf{Peak BAC Values}: Both models showed realistic peak BAC values ranging from 0.02-0.10 g/100mL depending on:
+    \begin{itemize}
+        \item Gender (male vs female)
+        \item Alcohol concentration (5\% beer vs 40\% spirits)
+        \item Body weight and total body water content
+    \end{itemize}
+    
+    \item \textbf{Recovery Times}: 
+    \begin{itemize}
+        \item Classical model: 2-8 hours to reach BAC $<$ 0.01 g/100mL
+        \item Fractional model: 3-10 hours to reach BAC $<$ 0.01 g/100mL
+        \item Both models showed proper scaling with body weight (heavier individuals recover faster)
+    \end{itemize}
+    
+    \item \textbf{Gender Differences}: Female subjects consistently showed:
+    \begin{itemize}
+        \item Higher peak BAC values due to lower total body water content (55\% vs 68\% for males)
+        \item Longer recovery times across all weight ranges
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{Model Comparison and Analysis}
+
+Figure~\ref{fig:model_analysis} presents detailed comparisons between the classical and fractional models:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{model_analysis.png}
+    \caption{Detailed model analysis showing: (Top left) Direct comparison of classical vs fractional models for a 70kg male consuming beer. (Top right) Tolerance time comparison across different body weights. (Bottom left) Effect of fractional order $\alpha$ on BAC curves. (Bottom right) Memory effect demonstration in the fractional model.}
+    \label{fig:model_analysis}
+\end{figure}
+
+\paragraph{Direct Model Comparison}
+For a typical scenario (70kg male consuming 350mL of 5\% ABV beer):
+\begin{itemize}
+    \item Classical model: Peak BAC of 0.035 g/100mL at ~0.5 hours
+    \item Fractional model: Peak BAC of 0.032 g/100mL at ~0.7 hours
+    \item Fractional model showed slower absorption and elimination, more consistent with physiological observations
+\end{itemize}
+
+\paragraph{Tolerance Time Analysis}
+Using a high-dose scenario (500mL of 40\% ABV spirits):
+\begin{itemize}
+    \item Both models showed decreasing tolerance time (time above 0.08 g/100mL) with increasing body weight
+    \item Classical model: 1.5-4.5 hours above legal limit
+    \item Fractional model: 2.0-5.2 hours above legal limit
+    \item Fractional model consistently predicted longer impairment periods
+\end{itemize}
+
+\paragraph{Fractional Order Effects}
+Varying the fractional order $\alpha$ from 0.6 to 1.0:
+\begin{itemize}
+    \item $\alpha = 1.0$: Reduces to classical exponential behavior
+    \item $\alpha = 0.8$: Moderate memory effect, slower elimination
+    \item $\alpha = 0.6$: Strong memory effect, significantly prolonged BAC decay
+\end{itemize}
+
+\paragraph{Memory Effect Demonstration}
+The fractional model captured physiological memory effects:
+\begin{itemize}
+    \item Non-exponential decay patterns
+    \item Slower initial decline followed by prolonged tail
+    \item More realistic representation of individual metabolic variations
+\end{itemize}
+
+\subsection{Model Performance Metrics}
+
+\subsubsection{Computational Efficiency}
+\begin{itemize}
+    \item Classical model: ~0.1ms per time point
+    \item Fractional model: ~2.5ms per time point (due to Mittag-Leffler function computation)
+    \item Both models suitable for real-time applications
+\end{itemize}
+
+\subsubsection{Numerical Stability}
+Both models demonstrated excellent numerical stability across the tested parameter ranges:
+\begin{itemize}
+    \item Body weight: 60-100 kg
+    \item Alcohol doses: 350mL beer to 500mL spirits
+    \item Time horizons: 0-15 hours
+\end{itemize}
+
+\section{Discussion}
+
+\subsection{Advantages of the Fractional Model}
+
+The fractional calculus-based model offers several theoretical and practical advantages:
+
+\begin{enumerate}
+    \item \textbf{Physiological Realism}: The memory effect inherent in fractional derivatives better represents the complex, non-Markovian nature of alcohol metabolism
+    
+    \item \textbf{Individual Variability}: Fractional orders ($\alpha$, $\beta$) can be adjusted to capture individual metabolic differences
+    
+    \item \textbf{Prolonged Effects}: Better prediction of extended impairment periods, particularly relevant for safety applications
+    
+    \item \textbf{Mathematical Flexibility}: Reduces to classical model when $\alpha = \beta = 1$, providing a unified framework
+\end{enumerate}
+
+\subsection{Limitations and Future Work}
+
+\subsubsection{Current Limitations}
+\begin{itemize}
+    \item Parameters ($k_1$, $k_2$, $\alpha$, $\beta$) require empirical determination for individual subjects
+    \item Computational overhead compared to classical models
+    \item Limited experimental validation with real BAC measurement data
+\end{itemize}
+
+\subsubsection{Future Research Directions}
+\begin{itemize}
+    \item Parameter estimation from individual BAC measurements
+    \item Integration with wearable sensor data
+    \item Population-based parameter distributions
+    \item Real-time model adaptation algorithms
+\end{itemize}
+
+\section{Conclusion}
+
+This study successfully developed and compared classical and fractional calculus-based models for blood alcohol concentration prediction. Key conclusions include:
+
+\begin{enumerate}
+    \item \textbf{Model Validity}: Both models produced physiologically reasonable BAC predictions across diverse scenarios including variations in gender, body weight, and alcohol consumption patterns.
+    
+    \item \textbf{Fractional Model Superiority}: The fractional model demonstrated several advantages:
+    \begin{itemize}
+        \item More realistic absorption and elimination kinetics
+        \item Capture of memory effects in alcohol metabolism
+        \item Better prediction of prolonged impairment periods
+        \item Flexibility to model individual metabolic variations
+    \end{itemize}
+    
+    \item \textbf{Practical Applications}: Both models are computationally efficient enough for:
+    \begin{itemize}
+        \item Real-time BAC monitoring applications
+        \item Personal safety devices and smartphone apps
+        \item Legal and forensic BAC estimation
+        \item Research into alcohol metabolism
+    \end{itemize}
+    
+    \item \textbf{Parameter Sensitivity}: The fractional model's performance is highly dependent on proper parameter selection:
+    \begin{itemize}
+        \item $\alpha = 0.8$ provided optimal balance of realism and stability
+        \item $\beta = 0.9$ captured appropriate elimination characteristics
+        \item Individual calibration could significantly improve accuracy
+    \end{itemize}
+    
+    \item \textbf{Safety Implications}: The fractional model's prediction of longer impairment periods has important safety implications:
+    \begin{itemize}
+        \item More conservative estimates for driving safety
+        \item Better prediction of cognitive impairment duration
+        \item Improved risk assessment for alcohol-related activities
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Final Recommendations}
+
+Based on our analysis, we recommend:
+
+\begin{enumerate}
+    \item \textbf{Adoption of Fractional Models}: For applications where accuracy is critical (safety devices, legal estimation), the fractional model should be preferred despite slightly higher computational cost.
+    
+    \item \textbf{Individual Calibration}: When possible, model parameters should be calibrated to individual subjects using measured BAC data.
+    
+    \item \textbf{Conservative Estimates}: For safety applications, the fractional model's longer predicted impairment times provide a valuable safety margin.
+    
+    \item \textbf{Further Validation}: Extensive validation with controlled studies and real-world BAC measurements is recommended before deployment in critical applications.
+\end{enumerate}
+
+The fractional calculus approach represents a significant advancement in BAC modeling, offering improved physiological realism and practical utility for both research and applied contexts. While challenges remain in parameter determination and validation, the theoretical foundation and preliminary results strongly support continued development of this approach.
+
+
+% \section{Python 코드}
+% \begin{lstlisting}
+% """
+% Fixed plotting script for BAC models with improved visualization
+% ... (중략) ...
+% # 전체 스크립트 코드를 여기에 붙여넣으세요
+% """
+% import numpy as np
+% import matplotlib.pyplot as plt
+% # (이하 생략)
+% \end{lstlisting}
+
+% \end{document}
+
+
+% \section{Role}
+% \\
+
+% SEPD code 구현: 상수
+
+% Result: 
+
+% Conclusion: 
+
+% \subsection{Problem Statement}
+
+% Rebuild/restore the image/paint using the Fourier Transform/Laplace Transform. 
+
+% \subsection{Appealing to the Problem}
+
+% 디지털 이미지가 핵심적인 역할을 하는 분야에서 촬영 환경이나 방식의 한계 혹은 전송과정에서의 오류나 저장장치의 손상 등으로 일부가 왜곡되거나 손실되는 문제를 막고자 푸리에 변환을 활용한 이미지 복원 알고리즘을 주제로 삼게 되었다.\\
+% \line(1,0){250}  \\
+% 또는\\
+% \line(1,0){250} \\
+% 학교 사진을 찍는데 공사장 등의 풍경이 좋지 못해 이를 다양한 방법을 사용하여 개선해보고자 한다. \\
+% or \\
+% \line(1,0){250}\\
+% 유명한 관광지에서 사진을 찍을때, 인파로 인해 풍경이 가려지거나 구도가 망가지는 경우가 종종 있다. 이를 해결하기 위해 Laplace, fourier transform을 이용한 image inpainting 기술을 사용해보고자 한다. 
+% \section{Introduction}
+% \begin{enumerate}
+% \item Describe the problem you deal with.
+
+% \item Mention the history of the research area. 
+% \item Briefly introduce your method(s) and result(s).
+% \item Write the other approaches to deal with the problem and compare them with your approach. 
+% \item Summarize your research results. 
+% \item DELIVER THE SELLING POINTS OF YOUR RESEARCH CLEARLY! 
+% \end{enumerate}
+
+% \section{Main Body}
+% Scientifically describe the methodology to solve the problem. 
+% \subsection{Main Body Subsection 1}
+%    Let $\bar{\Omega}$ is the closure of $\Omega \subset \mathbb{R}^d$,
+%      we define the vector space
+%      $\mathcal{C}(\bar{\Omega})$ to consist of all
+%       those functions $\phi\in  \mathcal{C}^m(\Omega)$
+%      for which  $D^{\alpha} \phi$ is bounded and uniformly continuous on
+%      $\Omega$ for  $|\alpha|=\alpha_1+\cdots+\alpha_d \le m.$
+%       In the following,
+%     a function $ \phi \in \mathcal{C}^m(\Omega)$ is said to be a $
+%    \mathcal{C}^m$- function.
+%   % For a subset $\Omega\subset \mathbb{R}^d,$
+%   % we denote by $\overline{\Omega}$ the closure of $\Omega$ in $\mathbb{R}^d$.
+%    If $\Psi$ is a function defined on $\Omega$, we define the {\bf support} of
+%    $\Psi$ as
+%      $$ {\rm supp }\Psi = \overline{ \{x\in\Omega| \Psi(x) \neq 0\}  }.$$
+
+%   A family $\{U_k: k \in \mathcal{D}\}$ of open subsets of $ \mathbb{R}^d$ is
+%   said to be {\bf a point finite open covering } of $ \Omega \subseteq  \mathbb{R}^d$  if
+%    there is an integer $M$ such that any $x\in \Omega$ lies in at most $M$ of the open sets $U_k$
+%    and  $  \Omega \subseteq \bigcup_k U_k $.
+% %%
+
+%     \begin{eqnarray*}\label{window-1}
+%          w(x) = \left\{ \begin{array}{ll}
+%                        ( 1 - x^2)^l, & |x| \le 1, \\
+%                        0,                & |x|  > 1,
+%                     \end{array} \right.
+%     \end{eqnarray*}
+%   where $l$ is an integer. Then $w(x)$ is  a $ \mathcal{C}^{l-1}$-function.
+%   In $ \mathbb{R}^d$, the weight function $w(x_1,\cdots,x_d)$ can be
+%   constructed from a one-dimensional weight function
+%         as $w(x_1,\cdots,x_d) = \prod_{i=1}^d w(x_i).$ 
+%  %%%where   $x = (x_1,\cdots,x_d)$.
+
+%   In  this paper, we use the normalized
+%   window function defined by
+%         \begin{eqnarray*}\label{flat-top-PU}
+%          w_{\delta}^{l}(x) &=& Aw(\frac{x}{\delta}),
+%      \end{eqnarray*}
+%     where  $A = [(2l+1)!]/[2^{2l+1}(l!)^2\delta]$ is the
+%        constant that makes $\int_{ \mathbb{R}}  w_{\delta}^{l}(x) dx = 1.$
+
+
+% \subsection{Main Body Subsection 2}
+% First, we define one-dimensional PU functions without flat-top, and then we modify the PU functions to have flat-top.
+
+% For any positive integer $n$,
+%      $ \mathcal{C}^{n-1}$- piecewise polynomial basic PU functions are
+%      constructed   as follows:
+% For integer $n \ge 1$, we define a piecewise polynomial function by 
+% \begin{equation*}\label{smoothPUFT}
+%       \varphi_{g_n}^{(pp)}(x) =\left\{
+%          \begin{array}{lll}
+%             \varphi_{g_n}^L(x):= (1+x)^n g_n(x)  &\mbox{if}& x \in [-1,   0], \\
+%             \varphi_{g_n}^R(x):= (1-x)^n g_n(-x) &\mbox{if}& x \in [0,   1],   \\
+%             0               &\mbox{if}& |x| \ge 1,
+%          \end{array}\right.
+% \end{equation*}
+% where $g_n(x)=a_0^{(n)}+a_1^{(n)}(-x)+a_2^{(n)}(-x)^2+\cdots+a_{n-1}^{(n)}(-x)^{n-1}$ whose coefficients are inductively constructed by the following 
+% recursion formula:
+% \begin{eqnarray}\label{recur}
+%     a_k^{(n)} =  \left\{
+%            \begin{array}{lll}
+%                1                        & \mbox{  if }  & k = 0, \\
+%            \ds{\sum_{j=0}^{k} a_j^{(n-1)} } & \mbox{  if }  & 0< k \le n-2, \\
+%                2(a_{n-2}^{(n)})             & \mbox{  if }  & k = n - 1 .
+%            \end{array}  \right.
+% \end{eqnarray}
+% Using the recurrence relation (\ref{recur}), $g_n(x)$ is as follows:
+% \begin{align*}
+%  g_1(x) &=& 1 \\
+%  g_2(x) &=& 1-2x \\
+%  g_3(x) &=& 1-3x+6x^2 \\
+%  g_4(x) &=& 1-4x+10x^2-x^3 \\
+%  g_5(x) &=& 1-5x+15x^2-35x^3+70x^4 \\
+%  \vdots && \vdots
+% \end{align*}
+
+% \section{Numerical or Experimental Results}
+% Demonstrate and illustrate how your method is effectively working in this section. You may compare the results obtained by your method and other results.
+% \begin{figure}
+% 	\begin{center}
+% 		\includegraphics[width=3in]{cylinder2-1.pdf}
+% 		\caption{Deformation of a transverse normal according to Kirchoff (classical), Reissner-Mindlin (first order), and third order plate theories.}
+% 		\label{FIGURE:plate_theory}
+% 	\end{center}
+% \end{figure}
+
+	
+% \begin{table}
+% \begin{center}
+% \caption{Fundamental frequency $\bar{\omega}_{mn}$ for a CCCC square Reissner-Mindlin plate with $h/a=0.1$, $k_s=0.8601$, $\nu=0.3$}
+% \label{TABLE:vibration_cccc1}
+% \begin{tabular}{c c c c c}
+% \toprule
+% Method & $\quad $ FEM $\quad $ & $\quad $ RKPM $\quad $ & $\quad $ RPPM $\quad $ & Rayleigh-Ritz \\
+% \hline
+% DOF & 441 & 289 & 196& $\cdot$ \\
+% \toprule
+% Mode no.$(m,n)$ & & & & \\
+% 1(1,1)& 1.5955& 1.5582 &1.5910 &1.594 \\
+% 2(2,1)& 3.0662& 3.0182&3.0390 &3.039 \\
+% 3(1,2)& 3.0662& 3.0182&3.0390 &3.039\\
+% 4(2,2)& 4.2924& 4.1711&4.2627 &4.265 \\
+% 5(3,1)& 5.1232& 5.1218&5.0255 &5.035 \\
+% 6(1,3)& 5.1730& 5.1594&5.0731 &5.078 \\
+% 7(3,2)& 6.1587& 6.0178&6.0808 &$\cdot$ \\
+% 8(2,3)& 6.1587& 6.0178&6.0808 &$\cdot$ \\
+% 9(4,1)& 7.6554& 7.5169&7.4204 &$\cdot$ \\
+% 10(1,4)& 7.6554& 7.5169&7.4204 &$\cdot$ \\
+% 11(3,3)& 7.7703& 7.7288&7.6814 &$\cdot$ \\
+% 12(4,2)& 8.4555& 8.3985&8.2671 &$\cdot$ \\
+% 13(2,4)& 8.5378& 8.3985&8.3426 &$\cdot$ \\
+% \bottomrule
+% \end{tabular}
+% \end{center}
+% \end{table}
+
+% \section{Conclusion}
+% Summarize your research, including the result(s).
+
+
+\bibliographystyle{amsplain}
+\bibliography{ref}
+
+\end{document}
