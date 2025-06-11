@@ -140,19 +140,21 @@ class EnhancedBACCalculatorApp:
         alcohol_mass = volume * (abv / 100) * rho_ethanol  # grams
         tbw_volume = tbw_ratio * weight  # liters
         A0 = alcohol_mass / tbw_volume  # g/L
-        return A0    def find_recovery_times(self, t_array, bac_array):
+        return A0
+
+    def find_recovery_times(self, t_array, bac_array):
         """Find recovery times for different thresholds"""
         bac_mg = bac_array * 100  # Convert to mg/100mL
-        
+
         # Find peak BAC first
         peak_idx = np.argmax(bac_mg)
         peak_time = t_array[peak_idx]
-        
+
         # Only look for recovery times after the peak
         post_peak_mask = t_array > peak_time
         post_peak_times = t_array[post_peak_mask]
         post_peak_bac = bac_mg[post_peak_mask]
-        
+
         # Legal driving limit (50 mg/100mL in Korea)
         legal_idx = np.where(post_peak_bac <= 50)[0]
         legal_time = post_peak_times[legal_idx[0]] if len(legal_idx) > 0 else None
@@ -163,7 +165,9 @@ class EnhancedBACCalculatorApp:
 
         # Complete recovery (10 mg/100mL)
         recovery_idx = np.where(post_peak_bac <= 10)[0]
-        recovery_time = post_peak_times[recovery_idx[0]] if len(recovery_idx) > 0 else None
+        recovery_time = (
+            post_peak_times[recovery_idx[0]] if len(recovery_idx) > 0 else None
+        )
 
         return legal_time, safe_time, recovery_time
 

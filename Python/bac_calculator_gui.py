@@ -94,7 +94,9 @@ class BACCalculatorApp:
         else:
             B_t = (k1 * A0 / (k2 - k1)) * (np.exp(-k1 * t) - np.exp(-k2 * t))
 
-        return max(0.0, A_t), max(0.0, B_t)    def calculate_initial_concentration(self, weight, tbw_ratio, volume, abv):
+        return max(0.0, A_t), max(0.0, B_t)
+
+    def calculate_initial_concentration(self, weight, tbw_ratio, volume, abv):
         """Calculate initial alcohol concentration A0 in stomach"""
         rho_ethanol = 0.789  # g/mL
         alcohol_mass = volume * (abv / 100) * rho_ethanol  # grams
@@ -105,22 +107,22 @@ class BACCalculatorApp:
     def find_recovery_times(self, t_array, bac_array):
         """Find recovery times for different thresholds - FIXED VERSION"""
         bac_mg = bac_array * 100  # Convert to mg/100mL
-        
+
         # Find peak BAC first to avoid catching initial zero values
         peak_idx = np.argmax(bac_mg)
         peak_time = t_array[peak_idx]
         peak_bac = bac_mg[peak_idx]
-        
+
         # If peak BAC is too low, no meaningful recovery time calculation
         if peak_bac < 10:
             return None, None, None
-        
+
         # Only look for recovery times after the peak
         post_peak_mask = t_array > peak_time
-        
+
         if not np.any(post_peak_mask):
             return None, None, None
-            
+
         post_peak_times = t_array[post_peak_mask]
         post_peak_bac = bac_mg[post_peak_mask]
 
@@ -134,7 +136,9 @@ class BACCalculatorApp:
 
         # Complete recovery (10 mg/100mL)
         recovery_idx = np.where(post_peak_bac <= 10)[0]
-        recovery_time = post_peak_times[recovery_idx[0]] if len(recovery_idx) > 0 else None
+        recovery_time = (
+            post_peak_times[recovery_idx[0]] if len(recovery_idx) > 0 else None
+        )
 
         return legal_time, safe_time, recovery_time
 
@@ -148,7 +152,9 @@ class BACCalculatorApp:
 
         # Complete recovery (10 mg/100mL)
         recovery_idx = np.where(post_peak_bac <= 10)[0]
-        recovery_time = post_peak_times[recovery_idx[0]] if len(recovery_idx) > 0 else None
+        recovery_time = (
+            post_peak_times[recovery_idx[0]] if len(recovery_idx) > 0 else None
+        )
 
         return legal_time, safe_time, recovery_time
 
