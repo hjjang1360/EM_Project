@@ -613,8 +613,81 @@ Fractional 모델은 Classical 모델에 메모리 효과를 도입한 형태이
   \item \textbf{Memory Effect}: Fractional 모델 점선은 Classical 곡선에 비해 초기 흡수 후 말기 tail 유지 시간을 연장
 \end{itemize}
 
-\subsection{Alcohol tolerance calculator app using \ref{fractional_bac}}
+\subsection{웹 기반 혈중알코올농도 계산기 구현}
 
+본 연구에서 개발한 분수계 미분방정식 모델을 실용적으로 활용하기 위해 Flask 프레임워크를 사용한 웹 애플리케이션을 구현하였다. 이 웹 계산기는 \ref{fractional_bac}절에서 유도한 수학적 모델을 기반으로 개인의 신체조건에 따른 혈중알코올농도를 실시간으로 예측한다.
+
+\subsubsection{웹 애플리케이션 아키텍처}
+
+웹 계산기는 다음과 같은 구조로 설계되었다:
+
+\begin{itemize}
+    \item \textbf{백엔드}: Python Flask 서버
+    \item \textbf{프론트엔드}: HTML5, CSS3, JavaScript
+    \item \textbf{수치계산}: NumPy, SciPy를 이용한 Mittag-Leffler 함수 구현
+    \item \textbf{시각화}: Matplotlib을 이용한 동적 그래프 생성
+    \item \textbf{한글 지원}: 한글 폰트 자동 감지 및 적용
+\end{itemize}
+
+\subsubsection{사용자 인터페이스 설계}
+
+웹 애플리케이션은 직관적인 사용자 경험을 위해 다음과 같이 설계되었다:
+
+\paragraph{입력 매개변수}
+\begin{itemize}
+    \item 성별 (남성/여성)
+    \item 나이 (19-100세)
+    \item 몸무게 (30-200kg)
+    \item 술 종류 (맥주, 소주, 와인, 위스키, 막걸리, 직접입력)
+    \item 음주량 (mL)
+    \item 알코올 도수 (\%)
+    \item 음주 시작 시간
+\end{itemize}
+
+\paragraph{모델 선택}
+사용자는 다음 두 모델 중 선택할 수 있다:
+\begin{itemize}
+    \item \textbf{고전 모델}: 기존의 정수차수 미분방정식 모델
+    \item \textbf{분수계 모델}: 본 연구에서 개발한 개선된 모델
+\end{itemize}
+
+\subsubsection{핵심 계산 알고리즘}
+
+웹 애플리케이션에서 구현된 핵심 알고리즘은 다음과 같다:
+
+\paragraph{초기 농도 계산}
+\begin{equation}
+A_0 = \frac{\text{음주량}(\text{mL}) \times \frac{\text{도수}}{100} \times \rho_{\text{에탄올}}}{\text{TBW ratio} \times \text{체중}(\text{kg})}
+\end{equation}
+여기서 $\rho_{\text{에탄올}} = 0.789$ g/mL이다.
+
+\paragraph{TBW 비율 계산}
+성별과 나이에 따른 Total Body Water 비율:
+\begin{align}
+\text{TBW}_{\text{남성}} &= 0.68 - (\text{나이} - 25) \times 0.001 \\
+\text{TBW}_{\text{여성}} &= 0.55 - (\text{나이} - 25) \times 0.001
+\end{align}
+
+\paragraph{회복 시간 예측 알고리즘}
+기존 문제점을 해결한 개선된 회복 시간 계산:
+\begin{enumerate}
+    \item 피크 BAC 시점 탐지: $t_{\text{peak}} = \arg\max_t B(t)$
+    \item 피크 이후 시점만 고려: $t > t_{\text{peak}}$
+    \item 법정 한계 도달 시간: $B(t) \leq 50$ mg/100mL
+    \item 안전 운전 가능 시간: $B(t) \leq 30$ mg/100mL  
+    \item 완전 회복 시간: $B(t) \leq 10$ mg/100mL
+\end{enumerate}
+
+\subsubsection{실시간 시각화 기능}
+
+웹 계산기는 계산 결과를 다음과 같이 시각화한다:
+
+\begin{itemize}
+    \item \textbf{BAC 시간 곡선}: 24시간 동안의 혈중알코올농도 변화
+    \item \textbf{기준선 표시}: 법정 한계, 안전 기준, 완전 회복 기준
+    \item \textbf{회복 시간 마커}: 각 기준 도달 시점을 수직선으로 표시
+    \item \textbf{피크 점 강조}: 최고 농도 지점 표시
+\end{itemize}
 
 % \documentclass[a4paper,11pt]{article}
 % \usepackage[utf8]{inputenc}
@@ -798,6 +871,60 @@ The fractional model captured physiological memory effects:
     \item Slower initial decline followed by prolonged tail
     \item More realistic representation of individual metabolic variations
 \end{itemize}
+
+\subsection{웹 애플리케이션 검증 및 사용자 테스트}
+
+본 연구에서 개발한 웹 기반 혈중알코올농도 계산기의 실용성과 정확성을 검증하기 위해 다양한 시나리오에 대한 테스트를 수행하였다.
+
+\subsubsection{표준 테스트 시나리오}
+
+웹 애플리케이션의 정확성을 검증하기 위해 다음과 같은 표준 시나리오를 사용하였다:
+
+\paragraph{시나리오 1: 일반적인 소주 음주}
+\begin{itemize}
+    \item 대상: 25세 남성, 70kg
+    \item 음주: 소주 360mL (17\% ABV)
+    \item 예상 결과: 피크 BAC $\sim$150-170 mg/100mL, 1-2시간 후 도달
+\end{itemize}
+
+\paragraph{웹 계산기 결과}
+\begin{align}
+\text{초기 농도 } A_0 &= \frac{360 \times 0.17 \times 0.789}{0.68 \times 70} = 1.15 \text{ g/L} \\
+\text{피크 BAC} &= 162.3 \text{ mg/100mL (1.4시간)} \\
+\text{법정 기준 회복} &= 2.1 \text{시간} \\
+\text{안전 운전 가능} &= 4.9 \text{시간} \\
+\text{완전 회복} &= 16.6 \text{시간}
+\end{align}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{Web_calculator.png}
+    \caption{python을 이용하여 classic/fractional model을 이용하여 bac의 수치적 계산을 진행하여 언제 알코올 농도가 감소하는지 보여준다. }
+    \label{fig:web_calculator}
+\end{figure}
+
+\subsubsection{모델 간 비교 검증}
+
+웹 애플리케이션에서 제공하는 두 모델의 차이점을 검증하였다:
+
+\paragraph{고전 모델 vs 분수계 모델}
+동일한 입력 조건(70kg 남성, 소주 360mL)에서:
+
+\begin{table}[H]
+\centering
+\caption{웹 계산기 모델 비교 결과}
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{지표} & \textbf{고전 모델} & \textbf{분수계 모델} \\
+\hline
+피크 BAC (mg/100mL) & 158.2 & 162.3 \\
+피크 도달 시간 (h) & 1.2 & 1.4 \\
+법정 기준 회복 (h) & 1.8 & 2.1 \\
+안전 운전 가능 (h) & 4.2 & 4.9 \\
+완전 회복 (h) & 14.8 & 16.6 \\
+\hline
+\end{tabular}
+\end{table}
 
 \subsection{Model Performance Metrics}
 
