@@ -13,7 +13,7 @@
 \usepackage{tikz}
 \usepackage{pgfplots}
 \usepackage{hyperref}
-\usepackage{kotex}
+% \usepackage{kotex}
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
@@ -553,140 +553,161 @@ By integrally accounting for how past concentration changes influence the curren
 
 \section{Simulation}
 
-본 절에서는 Python 스크립트를 이용한 Classical 및 Fractional 모델 시뮬레이션 절차와 \ref{fractional_bac} 절에서 설명한 모델 해를 적용하여 얻은 서브플롯 구성 방식을 소개한다.
+%본 절에서는 Python 스크립트를 이용한 Classical 및 Fractional 모델 시뮬레이션 절차와 \ref{fractional_bac} 절에서 설명한 모델 해를 적용하여 얻은 서브플롯 구성 방식을 소개한다.
+
+This section introduces the simulation procedure for both the Classical and Fractional BAC models using Python scripts, and describes the subplot configuration based on the model solutions explained in Section \ref{fractional_bac}.
 
 \subsection{Classical BAC model}
-65kg 기준, 남/여 각 4가지 시나리오(5\% ABV 맥주·40\% ABV 증류주)로 진행. 
+%65kg 기준, 남/여 각 4가지 시나리오(5\% ABV 맥주·40\% ABV 증류주)로 진행. 
+Simulations are conducted for four scenarios (5\% ABV beer and 40\% ABV spirits) for both male and female subjects, based on a body weight of 65kg.
 \begin{enumerate}
-  \item \textbf{BAC 감소 vs Time}\
+  \item \textbf{BAC decrease vs Time}\
     \begin{itemize}
-      \item 시간 그리드: $t_{\mathrm{dense}}=[0\sim0.2]_{100}\cup[0.2\sim1]_{100}\cup[1\sim12]_{300}$
-      \item 4개 시나리오의 Classical 모델 $B(t)$ 곡선 overlay
-      \item 법정 한계(0.08\%) 및 회복 한계(0.01\%) 수평선 표시
+      \item Time grid: $t_{\mathrm{dense}}=[0\sim0.2]_{100}\cup[0.2\sim1]_{100}\cup[1\sim12]_{300}$
+      %\item 4개 시나리오의 Classical 모델 $B(t)$ 곡선 overlay
+      \item Overlay of $B(t)$ curves from the Classical model for the four scenarios
+      %\item 법정 한계(0.08\%) 및 회복 한계(0.01\%) 수평선 표시
+      \item Horizontal lines indicating legal limit (0.08\%) and recovery threshold (0.01\%)
     \end{itemize}
 
   \item \textbf{BAC $<$ 0.01\% time vs TBW}\
     \begin{itemize}
-      \item TBW: 30~70L (체중$\times$TBW 비율)
-      \item weight=TBW/ratio 역산, Classical 모델로 $B(t)$ 계산
-      \item $B(t)\le0.01\%$ 되는 시각 $t_f$ 산출 후 남·여 marker 구분 플롯
+      \item TBW: 30~70L (Body weight$\times$TBW ratio)
+      \item Weight is back-calculate from TBW and ratio, and $B(t)$ is computed using the Classical model
+      %\item $B(t)\le0.01\%$ 되는 시각 $t_f$ 산출 후 남·여 marker 구분 플롯
+      \item Calculate the time $t_f$ when $B(t)\le0.01\%$, and plot gender marker 
     \end{itemize}
 
   \item \textbf{BAC $<$ 0.01\% time vs Weight}\
     \begin{itemize}
-      \item 체중: 60~100kg, 5kg 단위
-      \item 시간 확장 그리드: [0~15]h, 500점 샘플링
-      \item $B(t)\le0.01\%$ 되는 시각 $t_f$ 를 weight–time curve로 플롯
+      \item Body weight: 60~100kg in 5kg increments
+      \item Extended time grid: [0–15]h, sampled at 500 points
+      % 근데 500점 샘플링이 뭐냐
+      %\item $B(t)\le0.01\%$ 되는 시각 $t_f$ 를 weight–time curve로 플롯
+      \item Plot of time $t_f$ (when $B(t) \le 0.01\%$) against body weight
     \end{itemize}
 \end{enumerate}
 
 \subsection{Fractional BAC model}\label{fractional_bac}
-Fractional 모델은 Classical 모델에 메모리 효과를 도입한 형태이다. 동일한 시나리오로 개선된 \texttt{fractional\_bac\_model\_improved} 함수를 적용한다.
+%Fractional 모델은 Classical 모델에 메모리 효과를 도입한 형태이다. 동일한 시나리오로 개선된 \texttt{fractional\_bac\_model\_improved} 함수를 적용한다.
+The fractional model incorporates memory effects into the classical model. The improved function \texttt{fractional\_bac\_model\_improved} is applied using the same scenarios.
 \begin{enumerate}
-  \item \textbf{BAC 감소 vs Time}\
+  \item \textbf{BAC decrease vs Time}\
     \begin{itemize}
-      \item Classical과 동일 $t_{\mathrm{dense}}$ 사용
-      \item 초기 지연된 피크, 말기 완만한 tail 구간 시각화
+      %\item Classical과 동일 $t_{\mathrm{dense}}$ 사용
+      \item Uses the same $t_{\mathrm{dense}}$ grid as the Classical model
+      %\item 초기 지연된 피크, 말기 완만한 tail 구간 시각화
+      \item Visualizes delayed peak at early stage and prolonged tail at the late stage
     \end{itemize}
 
   \item \textbf{BAC $<$ 0.01\% time vs TBW}\
     \begin{itemize}
       \item TBW: 30~70L
-      \item 시간 확장 그리드: [0$\sim$15]h
-      \item 남·여 marker 구분 후 $t_f$ 산출
+      \item Extended time grid: [0$\sim$15]h
+      %\item 남·여 marker 구분 후 $t_f$ 산출
+      \item Time $t_f$ calculated and plotted with gender-specific markers
     \end{itemize}
 
   \item \textbf{BAC $<$ 0.01\% time vs Weight}\
     \begin{itemize}
-      \item 체중: 60~100kg
-      \item 시간 확장 그리드: [0$\sim$15]h
-      \item Fractional 모델 회복 시간 동태 분석
+      \item Body weight: 60~100kg
+      \item  Extended time grid: [0$\sim$15]h
+      %\item Fractional 모델 회복 시간 동태 분석
+      \item Analysis of recovery time dynamics under the Fractional model
     \end{itemize}
 \end{enumerate}
 
 \subsection{Model Analysis}
-시뮬레이션 결과를 기반으로 모델 간 차이를 다음과 같이 분석하였다
+%시뮬레이션 결과를 기반으로 모델 간 차이를 다음과 같이 분석하였다
+Based on the simulation results, the differences between the two models are analyzed as follows:
 \begin{itemize}
-  \item \textbf{직접 비교}: 70kg 남성 맥주 시나리오에서 Classical 모델 피크 0.008 mg/100mL at 1h, Fractional 모델 0.009 mg/100mL at 1.5h
-  \item \textbf{Tolerance Time Comparison}: 고도수(500 mL, 40\% ABV)에서 Classical vs Fractional 모델 $\Delta$T 차이 명확히 시각화
-  \item \textbf{Effect of $\alpha$}: $\alpha=0.6,0.8,1.0$ 순으로 피크 BAC 감소 및 시점 앞당김 관찰
-  \item \textbf{Memory Effect}: Fractional 모델 점선은 Classical 곡선에 비해 초기 흡수 후 말기 tail 유지 시간을 연장
+  %\item \textbf{Direct Comparison}: 70kg 남성 맥주 시나리오에서 Classical 모델 피크 0.008 mg/100mL at 1h, Fractional 모델 0.009 mg/100mL at 1.5h
+  \item \textbf{Direct Comparison}: In the 70kg male beer scenario, the Classical model reaches a peak of 0.008 mg/100mL at 1 hour, while the Fractional model peaks at 0.009 mg/100mL at 1.5 hours
+  %\item \textbf{Tolerance Time Comparison}: 고도수(500 mL, 40\% ABV)에서 Classical vs Fractional 모델 $\Delta$T 차이 명확히 시각화
+  \item \textbf{Tolerance Time Comparison}: For high-alcohol intake (500 mL, 400\% ABV), the difference $\Delta$T between the Classical and Fractional models is clearly visualized
+  %\item \textbf{Effect of $\alpha$}: $\alpha=0.6,0.8,1.0$ 순으로 피크 BAC 감소 및 시점 앞당김 관찰
+  \item \textbf{Effect of $\alpha$}: As $\alpha$ decreases (0.6, 0.8, 1.0), the peak BAC decreases and occurs earlier
+  %\item \textbf{Memory Effect}: Fractional 모델 점선은 Classical 곡선에 비해 초기 흡수 후 말기 tail 유지 시간을 연장
+  \item \textbf{Memory Effect}: The dotted curve of the Fractional model shows an extended retention time in the tail phase compared to the Classical model
 \end{itemize}
 
-\subsection{웹 기반 혈중알코올농도 계산기 구현}
+\subsection{Alcohol tolerance calculator web using \ref{fractional_bac}}
+%본 연구에서 개발한 분수계 미분방정식 모델을 실용적으로 활용하기 위해 Flask 프레임워크를 사용한 웹 애플리케이션을 구현하였다. 이 웹 계산기는 \ref{fractional_bac}절에서 유도한 수학적 모델을 기반으로 개인의 신체조건에 따른 혈중알코올농도를 실시간으로 예측한다.
 
-본 연구에서 개발한 분수계 미분방정식 모델을 실용적으로 활용하기 위해 Flask 프레임워크를 사용한 웹 애플리케이션을 구현하였다. 이 웹 계산기는 \ref{fractional_bac}절에서 유도한 수학적 모델을 기반으로 개인의 신체조건에 따른 혈중알코올농도를 실시간으로 예측한다.
+To enable the practical application of the fractional-order differential equation model developed in this study, a web application was implemented using the Flask framework. This calculator predicts blood alcohol concentration (BAC) in real time based on the user’s physiological parameters using the mathematical model derived in Section \ref{fractional_bac}.
 
-\subsubsection{웹 애플리케이션 아키텍처}
+\subsubsection{Web Application Architecture}
 
-웹 계산기는 다음과 같은 구조로 설계되었다:
+The web calculator is structured as follows:
 
 \begin{itemize}
-    \item \textbf{백엔드}: Python Flask 서버
-    \item \textbf{프론트엔드}: HTML5, CSS3, JavaScript
-    \item \textbf{수치계산}: NumPy, SciPy를 이용한 Mittag-Leffler 함수 구현
-    \item \textbf{시각화}: Matplotlib을 이용한 동적 그래프 생성
-    \item \textbf{한글 지원}: 한글 폰트 자동 감지 및 적용
+    \item \textbf{Backend}: Python Flask server
+    \item \textbf{Frontend}: HTML5, CSS3, JavaScript
+    \item \textbf{Numerical Computation}: Implementation of the Mittag-Leffler function using NumPy and SciPy
+    \item \textbf{Visualization}: Dynamic graph generation using Matplotlib
+    \item \textbf{Korean Language Support}: Automatic detection and application of Korean fonts
 \end{itemize}
 
-\subsubsection{사용자 인터페이스 설계}
+\subsubsection{User Interface Design}
 
-웹 애플리케이션은 직관적인 사용자 경험을 위해 다음과 같이 설계되었다:
+To ensure an intuitive user experience, the web application interface was designed with the following features:
 
-\paragraph{입력 매개변수}
+\paragraph{Input Parameters}
 \begin{itemize}
-    \item 성별 (남성/여성)
-    \item 나이 (19-100세)
-    \item 몸무게 (30-200kg)
-    \item 술 종류 (맥주, 소주, 와인, 위스키, 막걸리, 직접입력)
-    \item 음주량 (mL)
-    \item 알코올 도수 (\%)
-    \item 음주 시작 시간
+    \item Gender (Male/Female)
+    \item Age (19-100 years)
+    \item Body weight (30-200kg)
+    \item Type of alcohol (Beer, Soju, Wine, Whiskey, Makgeolli, or Custom input)
+    \item Volume consumed (mL)
+    \item Alcohol concentration (\%)
+    \item Drinking start time
 \end{itemize}
 
-\paragraph{모델 선택}
-사용자는 다음 두 모델 중 선택할 수 있다:
+\paragraph{Model Selection}
+Users can choose between two models:
 \begin{itemize}
-    \item \textbf{고전 모델}: 기존의 정수차수 미분방정식 모델
-    \item \textbf{분수계 모델}: 본 연구에서 개발한 개선된 모델
+    \item \textbf{Classical Model}: Conventional integer-order differential equation model
+    \item \textbf{Fractional Model}: The improved model developed in this study
 \end{itemize}
 
-\subsubsection{핵심 계산 알고리즘}
+\subsubsection{Core Computational Algorithm}
 
-웹 애플리케이션에서 구현된 핵심 알고리즘은 다음과 같다:
+The core algorithm implemented in the web application includes the following:
 
-\paragraph{초기 농도 계산}
-\begin{equation}
-A_0 = \frac{\text{음주량}(\text{mL}) \times \frac{\text{도수}}{100} \times \rho_{\text{에탄올}}}{\text{TBW ratio} \times \text{체중}(\text{kg})}
+\paragraph{Initial Concentration Calculation}
+\begin{equation}\label{eq_sim}
+%A_0 = \frac{\text{음주량}(\text{mL}) \times \frac{\text{도수}}{100} \times \rho_{\text{에탄올}}}{\text{TBW ratio} \times \text{체중}(\text{kg})}
+A_0 = \frac{\text{Volume}(\text{mL}) \times \frac{\text{Alcohol \%}}{100} \times \rho_{\text{ethanol}}}{\text{TBW ratio} \times \text{Body Weight}(\text{kg})}
 \end{equation}
-여기서 $\rho_{\text{에탄올}} = 0.789$ g/mL이다.
+% 여기서 $\rho_{\text{에탄올}} = 0.789$ g/mL이다.
+In this equation \ref{eq_sim}, the $\rho_{\text{ethanol}}=0.789$g/mL. 
 
-\paragraph{TBW 비율 계산}
-성별과 나이에 따른 Total Body Water 비율:
+\paragraph{TBW Ratio Calculation}
+Total Body Water (TBW) ratio depending on gender and age:
 \begin{align}
-\text{TBW}_{\text{남성}} &= 0.68 - (\text{나이} - 25) \times 0.001 \\
-\text{TBW}_{\text{여성}} &= 0.55 - (\text{나이} - 25) \times 0.001
+\text{TBW}_{\text{Male}} &= 0.68 - (\text{Age} - 25) \times 0.001 \\
+\text{TBW}_{\text{Female}} &= 0.55 - (\text{Age} - 25) \times 0.001
 \end{align}
 
-\paragraph{회복 시간 예측 알고리즘}
-기존 문제점을 해결한 개선된 회복 시간 계산:
+\paragraph{Recovery Time Prediction Algorithm}
+An improved recovery time prediction process that addresses limitations of existing approaches:
 \begin{enumerate}
-    \item 피크 BAC 시점 탐지: $t_{\text{peak}} = \arg\max_t B(t)$
-    \item 피크 이후 시점만 고려: $t > t_{\text{peak}}$
-    \item 법정 한계 도달 시간: $B(t) \leq 50$ mg/100mL
-    \item 안전 운전 가능 시간: $B(t) \leq 30$ mg/100mL  
-    \item 완전 회복 시간: $B(t) \leq 10$ mg/100mL
+    \item Detect time of peak BAC: $t_{\text{peak}} = \arg\max_t B(t)$
+    \item Consider only time after the peak: $t > t_{\text{peak}}$
+    \item Time to reach legal threshold: $B(t) \leq 50$ mg/100mL
+    \item Time considered safe for driving: $B(t) \leq 30$ mg/100mL  
+    \item Time to complete recovery: $B(t) \leq 10$ mg/100mL
 \end{enumerate}
 
-\subsubsection{실시간 시각화 기능}
+\subsubsection{Real-Time Visualization Features}
 
-웹 계산기는 계산 결과를 다음과 같이 시각화한다:
+The web calculator visualizes the results as follows:
 
 \begin{itemize}
-    \item \textbf{BAC 시간 곡선}: 24시간 동안의 혈중알코올농도 변화
-    \item \textbf{기준선 표시}: 법정 한계, 안전 기준, 완전 회복 기준
-    \item \textbf{회복 시간 마커}: 각 기준 도달 시점을 수직선으로 표시
-    \item \textbf{피크 점 강조}: 최고 농도 지점 표시
+    \item \textbf{BAC-Time Curve}: Displays changes in BAC over a 24-hour period
+    \item \textbf{Reference Lines}: Indicates legal limit, safe threshold, and full recovery level
+    \item \textbf{Recovery Time Markers}: Vertical lines indicating the time at which each threshold is reached
+    \item \textbf{Peak Highlight}: Highlights the time and value of peak BAC
 \end{itemize}
 
 % \documentclass[a4paper,11pt]{article}
@@ -872,56 +893,57 @@ The fractional model captured physiological memory effects:
     \item More realistic representation of individual metabolic variations
 \end{itemize}
 
-\subsection{웹 애플리케이션 검증 및 사용자 테스트}
+\subsection{Web Application Validation and User Testing}
 
-본 연구에서 개발한 웹 기반 혈중알코올농도 계산기의 실용성과 정확성을 검증하기 위해 다양한 시나리오에 대한 테스트를 수행하였다.
+In order to verify the practicality and accuracy of the web-based blood alcohol concentration calculator developed in this study, tests were conducted across various scenarios.
 
-\subsubsection{표준 테스트 시나리오}
+\subsubsection{Standard Test Scenarios}
 
-웹 애플리케이션의 정확성을 검증하기 위해 다음과 같은 표준 시나리오를 사용하였다:
+The following standard scenarios were used to verify the accuracy of the web application:
 
-\paragraph{시나리오 1: 일반적인 소주 음주}
+\paragraph{Scenario 1: Typical Soju Consumption}
 \begin{itemize}
-    \item 대상: 25세 남성, 70kg
-    \item 음주: 소주 360mL (17\% ABV)
-    \item 예상 결과: 피크 BAC $\sim$150-170 mg/100mL, 1-2시간 후 도달
+    \item Subject: 25-year-old male, 70kg
+    \item Alcohol intake: 360mL of soju (17\% ABV)
+    \item Expected result: Peak BAC $\sim$150–170 mg/100mL, reached after 1–2 hours
 \end{itemize}
 
-\paragraph{웹 계산기 결과}
+\paragraph{Web Calculator Results}
 \begin{align}
-\text{초기 농도 } A_0 &= \frac{360 \times 0.17 \times 0.789}{0.68 \times 70} = 1.15 \text{ g/L} \\
-\text{피크 BAC} &= 162.3 \text{ mg/100mL (1.4시간)} \\
-\text{법정 기준 회복} &= 2.1 \text{시간} \\
-\text{안전 운전 가능} &= 4.9 \text{시간} \\
-\text{완전 회복} &= 16.6 \text{시간}
+\text{Initial concentration} A_0 &= \frac{360 \times 0.17 \times 0.789}{0.68 \times 70} = 1.15 \text{ g/L} \\
+\text{Peak BAC} &= 162.3 \text{ mg/100mL (1.4 hours)} \\
+\text{Legal threshold recovery} &= 2.1 \text{hours} \\
+\text{Safe to drive} &= 4.9 \text{hours} \\
+\text{Full recovery} &= 16.6 \text{hours}
 \end{align}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{Web_calculator.png}
-    \caption{python을 이용하여 classic/fractional model을 이용하여 bac의 수치적 계산을 진행하여 언제 알코올 농도가 감소하는지 보여준다. }
+    \caption{Using Python, classical/fractional models are used to numerically compute BAC and show when alcohol concentration decreases.}
     \label{fig:web_calculator}
 \end{figure}
 
-\subsubsection{모델 간 비교 검증}
+\subsubsection{Model Comparison Verification}
 
-웹 애플리케이션에서 제공하는 두 모델의 차이점을 검증하였다:
+The differences between the two models provided in the web application were verified:
 
-\paragraph{고전 모델 vs 분수계 모델}
-동일한 입력 조건(70kg 남성, 소주 360mL)에서:
+\paragraph{Classical Model vs Fractional Model}
+Under the same input conditions (70kg male, 360mL of soju):
 
 \begin{table}[H]
 \centering
-\caption{웹 계산기 모델 비교 결과}
+\caption{Web Calculator Model Comparison Results}
 \begin{tabular}{|l|c|c|}
 \hline
-\textbf{지표} & \textbf{고전 모델} & \textbf{분수계 모델} \\
+\textbf{Metric} & \textbf{Classical Model} & \textbf{Fractional Model} \\
 \hline
-피크 BAC (mg/100mL) & 158.2 & 162.3 \\
-피크 도달 시간 (h) & 1.2 & 1.4 \\
-법정 기준 회복 (h) & 1.8 & 2.1 \\
-안전 운전 가능 (h) & 4.2 & 4.9 \\
-완전 회복 (h) & 14.8 & 16.6 \\
+Peak BAC (mg/100mL) & 158.2 & 162.3 \\
+Time to Peak (h) & 1.2 & 1.4 \\
+Legal threshold recovery (h) & 1.8 & 2.1 \\
+Safe to drive (h) & 4.2 & 4.9 \\
+Full recovery (h) & 14.8 & 16.6 \\
+
 \hline
 \end{tabular}
 \end{table}
